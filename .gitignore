@@ -1,0 +1,11 @@
+# Research docs (not part of the bundle)
+docs/research/
+docs/autoharness-amplifier-analysis.md
+
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
