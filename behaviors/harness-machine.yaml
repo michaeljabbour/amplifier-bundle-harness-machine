@@ -1,0 +1,44 @@
+bundle:
+  name: harness-machine-behavior
+  version: 0.1.0
+  description: |
+    Mounts the modes system and registers agents for harness generation workflows.
+    Provides 7 modes, 7 agents, and 3 skills for constraint harness development.
+
+includes:
+  - bundle: git+https://github.com/microsoft/amplifier-bundle-modes@main#subdirectory=behaviors/modes.yaml
+
+hooks:
+  - module: hooks-mode
+    source: git+https://github.com/microsoft/amplifier-bundle-modes@main#subdirectory=modules/hooks-mode
+    config:
+      search_paths:
+        - "@harness-machine:modes"
+
+tools:
+  - module: tool-mode
+    source: git+https://github.com/microsoft/amplifier-bundle-modes@main#subdirectory=modules/tool-mode
+    config:
+      gate_policy: "warn"
+  - module: tool-skills
+    source: git+https://github.com/microsoft/amplifier-module-tool-skills@main
+    config:
+      skills:
+        - "@harness-machine:skills"
+
+agents:
+  include:
+    - harness-machine:environment-analyst
+    - harness-machine:spec-writer
+    - harness-machine:plan-writer
+    - harness-machine:harness-generator
+    - harness-machine:harness-critic
+    - harness-machine:harness-refiner
+    - harness-machine:harness-evaluator
+
+context:
+  include:
+    - harness-machine:context/instructions.md
+    - harness-machine:context/philosophy.md
+    - harness-machine:context/pattern.md
+    - modes:context/modes-instructions.md
