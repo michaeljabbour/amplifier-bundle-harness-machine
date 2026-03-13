@@ -1,0 +1,47 @@
+# =============================================================================
+# {{project_name}} -- Harness Machine State
+# =============================================================================
+# This file is the single source of truth for harness generation status.
+# Updated at every state transition. Any fresh session reads this to orient.
+#
+# WARNING: This project is managed by an autonomous harness machine.
+# Do NOT generate harnesses or write constraint code directly.
+# Run the recipes instead:
+#   amplifier tool invoke recipes operation=execute recipe_path={{project_dir}}/.harness-machine/build.yaml
+# See README.md for full instructions.
+#
+# Rules:
+# - Update after EVERY environment completion (not batched)
+# - Never two environments without a state update between them
+# - Blockers list halts the machine when present
+# =============================================================================
+
+phase: 1
+phase_name: "Generation"
+epoch: 1
+next_action: "Read harness spec, select next ready environment, begin constraint generation"
+blockers: []
+
+harness_spec:
+  status: "ready"    # ready | approved | needs-revision
+  path: "{{harness_spec}}"
+
+environments: {}
+  # Example:
+  # CartPole-v1:
+  #   name: "CartPole-v1"
+  #   status: "ready"          # ready | in-progress | done | blocked
+  #   harness_type: "action-verifier"   # action-filter | action-verifier | code-as-policy
+  #   harness_scale: "nano"             # nano | single | library | factory | self-improving
+  #   legal_action_rate: null           # null until measured; float 0.0-1.0 when done
+  #   heuristic_value: null             # null until measured; float (best achieved so far)
+  #   iterations_completed: 0
+  #   artifact_path: null               # path to generated nano-amplifier when done
+  #   best_candidate_path: null         # path to best-so-far (for resumability)
+
+meta:
+  project: "{{project_name}}"
+  created: "{{timestamp}}"
+  total_harnesses_completed: 0
+  last_updated: "{{timestamp}}"
+  last_session: null

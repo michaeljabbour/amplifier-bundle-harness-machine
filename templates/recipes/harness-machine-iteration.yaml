@@ -1,0 +1,260 @@
+# =============================================================================
+# {{project_name}}-harness-machine-iteration: Single iteration of the harness machine loop
+# =============================================================================
+#
+# Called by build.yaml in a while loop. Each invocation:
+#   1. Reads STATE.yaml to orient (bash) -- find next ready environment
+#   2. Dispatches a fresh generation session (agent) -- generate/critique/refine/evaluate
+#   3. Evaluates the harness against the environment (bash)
+#   4. Archives completed harnesses, increments epoch, updates timestamps (bash)
+#
+# Returns structured JSON so the outer loop can update_context.
+#
+# =============================================================================
+
+name: "{{project_name}}-harness-machine-iteration"
+description: "Single iteration of the {{project_name}} harness machine -- orient, generate, evaluate, persist."
+version: "1.0.0"
+tags: ["{{project_name}}", "iteration", "harness-generation"]
+
+context:
+  state_file: "{{state_file}}"
+  context_file: "{{context_file}}"
+  session_count: "0"
+
+steps:
+  # Step 1: Orient -- read STATE.yaml, find next ready environment
+  - id: "orient"
+    type: "bash"
+    command: |
+      python3 << 'PYEOF'
+      import json, yaml
+      try:
+          with open("{{state_file}}") as f:
+              state = yaml.safe_load(f)
+          blockers = state.get("blockers", [])
+          environments = state.get("environments", {})
+
+          # Find next environment with status=ready
+          next_env = None
+          next_env_name = None
+          for env_name, env_data in environments.items():
+              if isinstance(env_data, dict) and env_data.get("status") == "ready":
+                  next_env_name = env_name
+                  next_env = env_data
+                  break
+
+          ready_count = sum(1 for e in environments.values()
+                            if isinstance(e, dict) and e.get("status") == "ready")
+          done_count = sum(1 for e in environments.values()
+                           if isinstance(e, dict) and e.get("status") == "done")
+
+          if blockers:
+              result = {"status": "blocked", "error": "blockers present"}
+          elif next_env is None:
+              result = {
+                  "status": "complete",
+                  "next_env": None,
+                  "ready_count": ready_count,
+                  "done_count": done_count,
+              }
+          else:
+              result = {
+                  "status": "healthy",
+                  "next_env": next_env_name,
+                  "next_env_data": next_env,
+                  "harness_type": next_env.get("harness_type", "action-verifier"),
+                  "harness_scale": next_env.get("harness_scale", "nano"),
+                  "phase": state.get("phase", 0),
+                  "epoch": state.get("epoch", 0),
+                  "ready_count": ready_count,
+                  "done_count": done_count,
+              }
+          print(json.dumps(result))
+      except Exception as e:
+          print(json.dumps({"status": "blocked", "error": str(e)}))
+      PYEOF
+    output: "orient_state"
+    parse_json: true
+
+  # Step 2: Dispatch fresh harness generation session
+  - id: "working-session"
+    agent: "self"
+    prompt: |
+      You are a WORKING SESSION of the {{project_name}} harness machine.
+      You start with ZERO prior context. Your job: read state, generate a constraint harness
+      for the next environment, evaluate it, persist all results, and exit.
+
+      START BY READING THESE FILES (in this order):
+      1. {{state_file}} -- current phase, environments, what's done, what's next
+      2. {{context_file}} -- recent decisions and constraint design choices
+      3. {{harness_spec}} -- the harness specification (type, scale, constraints, acceptance criteria)
+
+      YOUR MISSION THIS SESSION:
+      - The target environment is: {{orient_state.next_env}}
+      - Harness type: {{orient_state.harness_type}}
+      - Harness scale: {{orient_state.harness_scale}}
+
+      BEFORE STARTING WORK:
+      - Mark the environment as "in-progress" in {{state_file}}
+      - Read any existing best_candidate_path for this environment (for resumability)
+
+      CONSTRAINT GENERATION PIPELINE (three-agent pattern):
+      Run ONE iteration of the generate → critique → refine → evaluate cycle:
+
+      1. GENERATE: Write the constraint code for this environment.
+         Required functions (from the AutoHarness paper):
+           def propose_action(board: str) -> str:
+               """Propose a valid action given the environment state as text."""
+           def is_legal_action(board: str, action: str) -> bool:
+               """Check if an action string is valid given the environment state as text."""
+         Package as a nano-amplifier:
+           .harness-machine/harnesses/{{orient_state.next_env}}-candidate/
+             constraints.py   -- the constraint code
+             behavior.yaml    -- Amplifier behavior: hooks config
+             context.md       -- Environment description + constraint rationale
+
+      2. CRITIQUE: Review the generated constraint code for:
+         - Coverage gaps (legal actions that would be rejected)
+         - Over-constraints (illegal actions that would be allowed)
+         - Edge cases not handled
+         - Misalignment with the harness spec
+
+      3. REFINE: Based on the critique, improve the constraint code.
+         Refinement logic from the AutoHarness paper:
+         - If is_legal_action() returns True but action is actually invalid → refine BOTH functions
+         - If is_legal_action() returns False and action is invalid → refine only propose_action()
+
+      4. EVALUATE: Measure the legal action rate.
+         - Run the harness against {{orient_state.next_env}} with test inputs
+         - Record: legal_action_rate (float 0.0-1.0), heuristic_value (float)
+         - If legal_action_rate >= target → mark done, save artifact
+         - If not yet converged → save as best_candidate, keep status=in-progress
+
+      AFTER EACH ITERATION:
+      - Update {{state_file}} with iterations_completed, heuristic_value, best_candidate_path
+      - If convergence achieved: set status=done, artifact_path to final harness directory
+      - Update {{context_file}} with what was learned about this environment's constraints
+
+      IF BLOCKED: add blocker to {{state_file}} blockers list, update {{context_file}}, stop.
+      IF DEGRADATION DETECTED (repeating yourself, losing coherence): commit work, update state, stop.
+
+      You are one session in a long chain. Persist everything to files.
+      What you don't write down is lost forever.
+
+      ## SAFETY CONSTRAINTS (MANDATORY -- NEVER VIOLATE)
+      - Your working directory is {{project_dir}}. Do NOT read, write, or execute commands on files outside this directory.
+      - FORBIDDEN commands: rm -rf, find -delete, any command targeting paths outside your working directory
+      - Do NOT cd to .., ~, /, or any path outside {{project_dir}}
+      - Do NOT access: ~/.ssh/, ~/.amplifier/keys.env, .env files, *.pem, *.key, or any credential files
+      - Do NOT run: git push, git remote add, or any command that sends code to a remote repository
+      - Do NOT start background processes with &, nohup, or disown unless the recipe infrastructure started them
+      - Do NOT install global packages (pip install without venv, npm install -g)
+      - If you need something outside these boundaries, add a blocker to {{state_file}} and STOP.
+      - VIOLATION OF THESE CONSTRAINTS MAY CAUSE DATA LOSS ACROSS THE ENTIRE DEVELOPMENT ENVIRONMENT.
+    output: "session_result"
+    timeout: {{session_timeout}}
+
+  # Step 3: Post-session -- archive completed harnesses, update epoch, return status
+  - id: "post-session"
+    type: "bash"
+    command: |
+      python3 << 'PYEOF'
+      import json, yaml, re, os
+      from datetime import datetime, timezone
+
+      try:
+          with open("{{state_file}}") as f:
+              state = yaml.safe_load(f)
+
+          session_num = int("{{session_count}}") + 1
+
+          # --- Archive old session summaries from context-transfer (keep last 5) ---
+          KEEP_SESSIONS = 5
+          ctx_path = "{{context_file}}"
+          session_archive = os.path.join(os.path.dirname(ctx_path) or ".", "SESSION-ARCHIVE.md")
+          if os.path.exists(ctx_path):
+              with open(ctx_path) as f:
+                  ctx = f.read()
+              sess = list(re.finditer(r'^### Session \d+ Summary', ctx, re.MULTILINE))
+              if len(sess) > KEEP_SESSIONS:
+                  header = ctx[:sess[0].start()]
+                  keep_from = sess[-KEEP_SESSIONS]
+                  to_archive = ctx[sess[0].start():keep_from.start()]
+                  keep = ctx[keep_from.start():]
+                  if to_archive.strip():
+                      existing = ""
+                      if os.path.exists(session_archive):
+                          with open(session_archive) as f:
+                              existing = f.read()
+                      if not existing:
+                          existing = "# Session Archive\n\n> Archived session summaries. Append-only.\n\n"
+                      if to_archive[:50] not in existing:
+                          with open(session_archive, "a") as f:
+                              f.write(to_archive)
+                  with open(ctx_path, "w") as f:
+                      f.write(header)
+                      f.write(f"> **Note**: Older sessions archived in SESSION-ARCHIVE.md.\n")
+                      f.write(f"> Only the last {KEEP_SESSIONS} sessions kept here.\n\n")
+                      f.write(keep)
+
+          # --- Update epoch, timestamp, and meta ---
+          state["epoch"] = state.get("epoch", 0) + 1
+          state["meta"] = state.get("meta", {})
+          state["meta"]["last_updated"] = datetime.now(timezone.utc).isoformat()
+          state["meta"]["last_session"] = datetime.now(timezone.utc).isoformat()
+          blockers = state.get("blockers", [])
+
+          # --- Tally completed harnesses ---
+          environments = state.get("environments", {})
+          done_count = sum(1 for e in environments.values()
+                           if isinstance(e, dict) and e.get("status") == "done")
+          state["meta"]["total_harnesses_completed"] = done_count
+
+          # --- Check remaining work ---
+          ready_count = sum(1 for e in environments.values()
+                            if isinstance(e, dict) and e.get("status") == "ready")
+          in_progress_count = sum(1 for e in environments.values()
+                                   if isinstance(e, dict) and e.get("status") == "in-progress")
+
+          with open("{{state_file}}", "w") as f:
+              yaml.dump(state, f, default_flow_style=False, sort_keys=False, width=120)
+
+          status = "blocked" if blockers else (
+              "complete" if ready_count == 0 and in_progress_count == 0 else "healthy"
+          )
+
+          print(json.dumps({
+              "status": status,
+              "session_count": str(session_num),
+              "done_count": done_count,
+              "ready_count": ready_count,
+          }))
+      except Exception as e:
+          print(json.dumps({"status": "blocked", "session_count": "{{session_count}}", "error": str(e)}))
+      PYEOF
+
+      # --- Empty session cleanup ---
+      SESSIONS_DIR="$HOME/.amplifier/sessions"
+      if [ -d "$SESSIONS_DIR" ]; then
+        CLEANED=0
+        for session_dir in "$SESSIONS_DIR"/*/; do
+          [ -d "$session_dir" ] || continue
+          events_file="$session_dir/events.jsonl"
+          if [ ! -f "$events_file" ] || [ ! -s "$events_file" ]; then
+            rm -rf "$session_dir"
+            CLEANED=$((CLEANED + 1))
+            continue
+          fi
+          line_count=$(wc -l < "$events_file" 2>/dev/null || echo "0")
+          if [ "$line_count" -lt 3 ]; then
+            rm -rf "$session_dir"
+            CLEANED=$((CLEANED + 1))
+          fi
+        done
+        if [ "$CLEANED" -gt 0 ]; then
+          echo "Cleaned up $CLEANED empty/near-empty session directories"
+        fi
+      fi
+    output: "iteration_result"
+    parse_json: true
