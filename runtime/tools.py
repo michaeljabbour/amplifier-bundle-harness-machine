@@ -3,12 +3,11 @@
 Implements: read_file, write_file, edit_file, bash, grep, glob.
 Every tool independently enforces the project_root boundary (defense-in-depth).
 
-Dependencies: stdlib only (subprocess, pathlib, os, fnmatch, re).
+Dependencies: stdlib only (subprocess, pathlib, os, re).
 """
 
 from __future__ import annotations
 
-import fnmatch
 import os
 import re
 import subprocess
@@ -215,7 +214,11 @@ class ToolExecutor:
             try:
                 for lineno, line in enumerate(filepath.read_text().splitlines(), 1):
                     if regex.search(line):
-                        rel = filepath.relative_to(resolved) if target.is_dir() else filepath.name
+                        rel = (
+                            filepath.relative_to(resolved)
+                            if target.is_dir()
+                            else filepath.name
+                        )
                         matches.append(f"{rel}:{lineno}:{line}")
             except (UnicodeDecodeError, PermissionError):
                 continue
@@ -245,7 +248,9 @@ class ToolExecutor:
         if not target.is_dir():
             return ""
 
-        matches = sorted(str(p.relative_to(resolved)) for p in target.glob(pattern) if p.is_file())
+        matches = sorted(
+            str(p.relative_to(resolved)) for p in target.glob(pattern) if p.is_file()
+        )
         return "\n".join(matches)
 
 
@@ -260,7 +265,11 @@ TOOL_DISPATCH = {
     "write_file": ("write_file", {"file_path": "file_path", "content": "content"}),
     "edit_file": (
         "edit_file",
-        {"file_path": "file_path", "old_string": "old_string", "new_string": "new_string"},
+        {
+            "file_path": "file_path",
+            "old_string": "old_string",
+            "new_string": "new_string",
+        },
     ),
     "bash": ("bash", {"command": "command", "timeout": "timeout"}),
     "grep": ("grep", {"pattern": "pattern", "path": "path"}),
