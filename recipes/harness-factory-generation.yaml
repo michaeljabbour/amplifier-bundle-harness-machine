@@ -1,0 +1,190 @@
+# Harness Factory Generation
+# Foreach batch recipe — generates harnesses for multiple environments from STATE.yaml.
+#
+# Pattern: dev-machine factory with foreach over environments.
+# Individual environment failures do not halt the factory (on_error: continue).
+# Results (success or failure) are written back to STATE.yaml per environment.
+#
+# Prerequisites:
+#   - STATE.yaml must exist at state_yaml_path (see templates/STATE.yaml)
+#   - environments list must be non-empty
+#   - output_dir must be writable
+#
+# Usage:
+#   amplifier run "execute harness-machine:recipes/harness-factory-generation.yaml
+#     with environments=['2048-v0','FrozenLake-v1','Chess-v0']
+#     state_yaml_path=.harness-machine/STATE.yaml
+#     output_dir=.harness-machine/harnesses"
+
+name: "harness-factory-generation"
+description: "Batch harness generation — foreach over environments list with STATE.yaml tracking"
+version: "1.0.0"
+author: "Harness Machine Bundle"
+tags: ["harness", "factory", "foreach", "batch", "state-yaml", "autonomous"]
+
+context:
+  environments: []                           # Required: list of environment names/descriptions
+  state_yaml_path: ".harness-machine/STATE.yaml"  # Path to STATE.yaml tracking file
+  output_dir: ".harness-machine/harnesses"   # Where to accumulate generated nano-amplifiers
+
+steps:
+  # ---------------------------------------------------------------------------
+  # Step 1: Load State
+  # Read STATE.yaml to get current generation status.
+  # Produces a JSON object with current state for downstream steps.
+  # ---------------------------------------------------------------------------
+  - id: "load-state"
+    type: bash
+    command: |
+      python3 -c "
+      import yaml, json, sys
+
+      state_path = '{{state_yaml_path}}'
+      try:
+          with open(state_path, 'r') as f:
+              state = yaml.safe_load(f)
+          print(json.dumps(state))
+      except FileNotFoundError:
+          # Initialize empty state if file doesn't exist yet
+          initial = {
+              'version': '1.0.0',
+              'environments': {},
+              'summary': {
+                  'total': 0,
+                  'converged': 0,
+                  'in_progress': 0,
+                  'failed': 0
+              }
+          }
+          print(json.dumps(initial))
+      except Exception as e:
+          print(json.dumps({'error': str(e)}), file=sys.stderr)
+          sys.exit(1)
+      "
+    output: "state"
+    parse_json: true
+
+  # ---------------------------------------------------------------------------
+  # Step 2: Generate Per Environment
+  # Foreach loop over the environments list.
+  # Each environment gets a full harness-development-cycle run.
+  # Individual failures are isolated — the factory continues.
+  # Results collected into all_harnesses.
+  # ---------------------------------------------------------------------------
+  - id: "generate-per-environment"
+    foreach: "{{environments}}"
+    as: "env"
+    type: recipe
+    recipe: "harness-machine:recipes/harness-development-cycle.yaml"
+    context:
+      target_description: "{{env}}"
+      output_dir: "{{output_dir}}/{{env}}"
+    on_error: "continue"
+    collect: "all_harnesses"
+
+  # ---------------------------------------------------------------------------
+  # Step 3: Verify Factory
+  # harness-evaluator reviews ALL generated harnesses holistically.
+  # Checks for consistency, coverage completeness, and any systemic issues.
+  # ---------------------------------------------------------------------------
+  - id: "verify-factory"
+    agent: "harness-machine:harness-evaluator"
+    prompt: |
+      Review all generated harnesses from the factory run.
+
+      OUTPUT DIR: {{output_dir}}
+      ENVIRONMENTS: {{environments}}
+      STATE FILE: {{state_yaml_path}}
+
+      GENERATION RESULTS:
+      {{all_harnesses}}
+
+      Perform holistic factory verification:
+      1. For each environment that completed: verify harness artifact structure (behavior.yaml, constraints.py, context.md)
+      2. Check legal action rates — are they within acceptable range per spec?
+      3. Identify any systemic patterns across failed environments
+      4. Note any environments that need retry or manual intervention
+      5. Assess overall factory health
+
+      Return a factory verification report including:
+      - Per-environment status (converged, rate, artifact path)
+      - Overall success rate (converged / total)
+      - Systemic issues (if any)
+      - Environments requiring retry
+      - Recommendation for next steps
+    output: "factory_verification"
+    timeout: 900
+
+  # ---------------------------------------------------------------------------
+  # Step 4: Update State
+  # Write generation results back to STATE.yaml.
+  # Each environment gets its status, legal_action_rate, and artifact path recorded.
+  # ---------------------------------------------------------------------------
+  - id: "update-state"
+    type: bash
+    command: |
+      python3 -c "
+      import yaml, json, os, sys
+      from datetime import datetime
+
+      state_path = '{{state_yaml_path}}'
+      output_dir = '{{output_dir}}'
+      all_harnesses_raw = '''{{all_harnesses}}'''
+      environments_raw = '''{{environments}}'''
+      verification_raw = '''{{factory_verification}}'''
+
+      # Load existing state (or empty)
+      try:
+          with open(state_path, 'r') as f:
+              state = yaml.safe_load(f) or {}
+      except FileNotFoundError:
+          state = {}
+
+      # Ensure structure
+      if 'environments' not in state:
+          state['environments'] = {}
+      if 'summary' not in state:
+          state['summary'] = {'total': 0, 'converged': 0, 'in_progress': 0, 'failed': 0}
+
+      # Parse environments list
+      try:
+          envs = json.loads(environments_raw)
+      except Exception:
+          envs = [e.strip().strip('\"') for e in environments_raw.strip('[]').split(',') if e.strip()]
+
+      # Update each environment entry
+      timestamp = datetime.utcnow().isoformat() + 'Z'
+      for env in envs:
+          env_key = str(env).replace('/', '-').replace(' ', '-').lower()
+          artifact_path = os.path.join(output_dir, env_key)
+          has_artifact = os.path.isdir(artifact_path) and os.path.exists(os.path.join(artifact_path, 'constraints.py'))
+
+          if env_key not in state['environments']:
+              state['environments'][env_key] = {}
+
+          state['environments'][env_key].update({
+              'environment': str(env),
+              'status': 'converged' if has_artifact else 'failed',
+              'artifact_path': artifact_path if has_artifact else None,
+              'last_updated': timestamp,
+          })
+
+      # Recompute summary
+      envs_state = state['environments']
+      state['summary'] = {
+          'total': len(envs_state),
+          'converged': sum(1 for v in envs_state.values() if v.get('status') == 'converged'),
+          'in_progress': sum(1 for v in envs_state.values() if v.get('status') == 'in_progress'),
+          'failed': sum(1 for v in envs_state.values() if v.get('status') == 'failed'),
+          'last_factory_run': timestamp,
+      }
+
+      # Write back
+      os.makedirs(os.path.dirname(state_path), exist_ok=True)
+      with open(state_path, 'w') as f:
+          yaml.dump(state, f, default_flow_style=False, sort_keys=False)
+
+      print(json.dumps({'updated': True, 'summary': state['summary']}))
+      "
+    output: "state_update"
+    parse_json: true

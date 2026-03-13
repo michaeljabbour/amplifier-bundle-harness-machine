@@ -1,0 +1,311 @@
+# Harness Development Cycle
+# Full interactive cycle with 3 approval gates: explore → spec → plan → execute → verify → finish.
+#
+# Pattern: superpowers full-development-cycle (staged recipe with human checkpoints).
+# Each stage has a defined job; approval gates let the human validate at critical junctures.
+#
+# Stages:
+#   1. exploration  — environment analyst + spec writer           → APPROVAL GATE
+#   2. planning     — plan writer                                 → APPROVAL GATE
+#   3. execution    — invokes harness-refinement-loop sub-recipe  (no gate — let it run)
+#   4. verification — harness evaluator runs novel test rollouts  → APPROVAL GATE
+#   5. completion   — package as nano-amplifier
+#
+# Usage:
+#   amplifier run "execute harness-machine:recipes/harness-development-cycle.yaml
+#     with target_description='constrain tool calls in a coding agent'
+#     output_dir='output/my-harness'"
+
+name: "harness-development-cycle"
+description: "Full interactive harness development cycle with 3 approval gates — explore, spec, plan, execute, verify, finish"
+version: "1.0.0"
+author: "Harness Machine Bundle"
+tags: ["harness", "development-cycle", "staged", "approval-gate", "interactive", "full-cycle"]
+
+context:
+  target_description: ""   # Required: What to constrain (e.g., "tool calls in a coding agent")
+  output_dir: "output"     # Where to put generated artifacts
+
+stages:
+  # ============================================================================
+  # STAGE 1: Exploration
+  # Understand the target environment and produce a harness specification.
+  # Two steps: analyst explores → spec writer documents the spec.
+  # APPROVAL GATE: human reviews the spec before we invest in planning.
+  # ============================================================================
+  - name: "exploration"
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 1: Explore the environment
+      # -----------------------------------------------------------------------
+      - id: "explore-environment"
+        agent: "harness-machine:environment-analyst"
+        prompt: |
+          Explore the target environment and produce an environment map.
+
+          TARGET: {{target_description}}
+          OUTPUT DIR: {{output_dir}}
+
+          Investigate thoroughly:
+          1. What actions exist in this environment?
+          2. What makes an action legal vs illegal?
+          3. Can legality be evaluated automatically? (feasibility gate)
+          4. What is the action space structure?
+          5. What edge cases or ambiguities exist?
+          6. What constraint approach would work best: action-filter, action-verifier, or code-as-policy?
+
+          FEASIBILITY GATE: If the action space is too ambiguous or verification is purely
+          subjective, stop and explain why this environment cannot be harnessed automatically.
+          Only proceed if legality can be defined programmatically.
+
+          Return a comprehensive environment map including:
+          - Action space description
+          - Legality rules (explicit and inferred)
+          - Feasibility assessment (go/no-go with rationale)
+          - Recommended harness_type and harness_scale
+          - Proposed constraint list with rationale for each
+        output: "environment_map"
+        timeout: 600
+
+      # -----------------------------------------------------------------------
+      # Step 2: Write the spec
+      # -----------------------------------------------------------------------
+      - id: "write-spec"
+        agent: "harness-machine:spec-writer"
+        prompt: |
+          Produce a concrete harness specification from the environment analysis.
+
+          TARGET: {{target_description}}
+          OUTPUT DIR: {{output_dir}}
+
+          ENVIRONMENT MAP:
+          {{environment_map}}
+
+          Create a harness specification document at:
+          {{output_dir}}/spec.md
+
+          The specification MUST include:
+          - harness_type: action-filter | action-verifier | code-as-policy
+          - harness_scale: nano | single | library | factory | self-improving
+          - Constraint list with rationale for each constraint
+          - Legal action space definition (precise and testable)
+          - Acceptance criteria: target legal action rate (e.g., 100%) and reward threshold if applicable
+          - Target environment description
+          - Edge cases and how each should be handled
+
+          Write the file and return its path.
+        output: "spec_path"
+        timeout: 600
+
+    # APPROVAL GATE: Human reviews the spec before we invest in planning
+    approval:
+      required: true
+      prompt: |
+        ======================================================================
+        STAGE 1 COMPLETE — SPEC READY FOR REVIEW
+        ======================================================================
+
+        The environment has been analyzed and a harness specification has been written.
+
+        ENVIRONMENT MAP:
+        {{environment_map}}
+
+        SPEC FILE: {{spec_path}}
+
+        Please review the specification:
+        - Is the target environment correctly understood?
+        - Are the constraints comprehensive and correct?
+        - Is the harness_type and harness_scale appropriate?
+        - Are the acceptance criteria measurable and achievable?
+
+        APPROVE to proceed to planning.
+        DENY to revise the spec (provide feedback and we will iterate).
+        ======================================================================
+      timeout: 0
+      default: "deny"
+
+  # ============================================================================
+  # STAGE 2: Planning
+  # Plan writer creates an implementation plan based on the approved spec.
+  # APPROVAL GATE: human reviews the plan before autonomous generation begins.
+  # ============================================================================
+  - name: "planning"
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 3: Write the plan
+      # -----------------------------------------------------------------------
+      - id: "write-plan"
+        agent: "harness-machine:plan-writer"
+        prompt: |
+          Create an implementation plan from the approved harness specification.
+
+          TARGET: {{target_description}}
+          OUTPUT DIR: {{output_dir}}
+          SPEC: {{spec_path}}
+
+          Read the spec file carefully. Produce a concrete implementation plan at:
+          {{output_dir}}/plan.md
+
+          The plan MUST include:
+          - Which constraint functions to implement (propose_action, is_legal_action, validate_action)
+          - Detailed pseudocode or algorithm for each function
+          - Test environments and test cases (with expected pass/fail)
+          - Acceptance criteria with measurable thresholds
+          - TDD tasks — each as an atomic unit with spec, files to create, and test cases
+          - For harness_scale=factory: STATE.yaml schema, environment list, iteration strategy
+          - Dependencies and ordering
+
+          Write the file and return its path.
+        output: "plan_path"
+        timeout: 600
+
+    # APPROVAL GATE: Human reviews the plan before autonomous generation
+    approval:
+      required: true
+      prompt: |
+        ======================================================================
+        STAGE 2 COMPLETE — PLAN READY FOR REVIEW
+        ======================================================================
+
+        The implementation plan has been written.
+
+        SPEC: {{spec_path}}
+        PLAN FILE: {{plan_path}}
+
+        Please review the plan:
+        - Does the plan fully address the spec requirements?
+        - Is the implementation approach sound?
+        - Are the test cases sufficient to verify correctness?
+        - Any concerns before autonomous generation begins?
+
+        APPROVE to start the refinement loop (this may take several minutes).
+        DENY to revise the plan (provide feedback and we will iterate).
+        ======================================================================
+      timeout: 0
+      default: "deny"
+
+  # ============================================================================
+  # STAGE 3: Execution
+  # Invokes harness-refinement-loop as a sub-recipe.
+  # Iterates generate/critique/refine/evaluate until convergence.
+  # No approval gate here — the loop runs autonomously.
+  # ============================================================================
+  - name: "execution"
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 4: Run the refinement loop
+      # -----------------------------------------------------------------------
+      - id: "run-refinement-loop"
+        type: recipe
+        recipe: "harness-machine:recipes/harness-refinement-loop.yaml"
+        context:
+          spec_path: "{{spec_path}}"
+          plan_path: "{{plan_path}}"
+          output_path: "{{output_dir}}/harness"
+          converged: "false"
+          iteration: "0"
+        output: "refinement_result"
+        timeout: 3600
+        on_error: "continue"
+
+  # ============================================================================
+  # STAGE 4: Verification
+  # harness-evaluator runs novel test rollouts to verify the final harness.
+  # This is independent verification — not the same evaluator from the loop.
+  # APPROVAL GATE: human reviews the evidence before packaging.
+  # ============================================================================
+  - name: "verification"
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 5: Novel test evaluation
+      # -----------------------------------------------------------------------
+      - id: "run-verification"
+        agent: "harness-machine:harness-evaluator"
+        prompt: |
+          Run independent verification of the generated harness using novel tests.
+
+          SPEC: {{spec_path}}
+          HARNESS PATH: {{output_dir}}/harness
+          REFINEMENT RESULT: {{refinement_result}}
+
+          This is NOVEL test evaluation — not the same tests used during generation.
+          Apply the Gate Function: IDENTIFY, RUN, READ, VERIFY, CLAIM.
+
+          Verification protocol based on harness_type (read from spec):
+          - action-verifier: Novel test rollouts (10+ random seeds, 1000 steps), measure legal action rate. Target: 100%.
+          - code-as-policy: Reward measurement vs baseline. Target: meets threshold from spec.
+          - action-filter: Verify filter completeness on fresh action samples.
+
+          DO NOT make claims without running tests and reading actual output.
+
+          Return a verification report including:
+          - Legal action rate (measured, not estimated)
+          - Test methodology (seeds, steps, methodology)
+          - Pass/fail verdict against acceptance criteria
+          - Any remaining issues or edge cases found
+          - Recommendation: SHIP IT or NEEDS MORE WORK
+        output: "verification_report"
+        timeout: 900
+
+    # APPROVAL GATE: Human reviews evidence before packaging
+    approval:
+      required: true
+      prompt: |
+        ======================================================================
+        STAGE 4 COMPLETE — VERIFICATION RESULTS READY
+        ======================================================================
+
+        Independent verification has been run on the generated harness.
+
+        VERIFICATION REPORT:
+        {{verification_report}}
+
+        SPEC: {{spec_path}}
+        HARNESS: {{output_dir}}/harness
+
+        Review the evidence:
+        - Does the legal action rate meet the acceptance criteria?
+        - Are the test results convincing?
+        - Any remaining edge cases you are concerned about?
+
+        APPROVE to package as a nano-amplifier.
+        DENY to return to execution (provide feedback on what to improve).
+        ======================================================================
+      timeout: 0
+      default: "deny"
+
+  # ============================================================================
+  # STAGE 5: Completion
+  # Package the verified harness as a nano-amplifier ready for composition.
+  # ============================================================================
+  - name: "completion"
+    steps:
+      # -----------------------------------------------------------------------
+      # Step 6: Package as nano-amplifier
+      # -----------------------------------------------------------------------
+      - id: "package-nano-amplifier"
+        agent: "harness-machine:harness-generator"
+        prompt: |
+          Package the verified harness as a nano-amplifier artifact.
+
+          HARNESS PATH: {{output_dir}}/harness
+          OUTPUT DIR: {{output_dir}}
+          SPEC: {{spec_path}}
+          VERIFICATION REPORT: {{verification_report}}
+
+          Ensure the nano-amplifier has exactly these three files:
+          1. behavior.yaml — Amplifier behavior: hooks config, mode reference
+          2. constraints.py — Python: propose_action(), is_legal_action(), validate_action()
+          3. context.md — Environment description, constraint rationale, usage instructions
+
+          Also:
+          - Update context.md to include final legal action rate from verification
+          - Add a "Usage" section showing how to compose via includes: in a bundle.md
+          - Commit all files with message: "feat: add {{target_description}} harness"
+
+          Return a completion summary:
+          - Final artifact paths
+          - Legal action rate achieved
+          - How to use this harness in another bundle
+        output: "completion_summary"
+        timeout: 600

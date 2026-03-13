@@ -1,0 +1,60 @@
+# Harness Refinement Loop
+# While-loop convergence wrapper around harness-single-iteration.yaml.
+#
+# Implements the tree search with Thompson sampling convergence loop from the
+# AutoHarness paper (Lou et al., Google DeepMind, 2026, arXiv:2603.03329v1).
+#
+# Loop mechanics:
+#   - Iterates harness-single-iteration.yaml until converged == 'true'
+#   - max 60 iterations (action-verifier average: 14.5, outliers like Chess: 60+)
+#   - Saves best-so-far on each iteration (checkpoint_best)
+#   - On timeout: returns best achieved (do not fail — 95% is better than nothing)
+#   - patience: 15 iterations flat heuristic → triggers plateau diagnosis in debug
+#
+# Usage:
+#   amplifier run "execute harness-machine:recipes/harness-refinement-loop.yaml
+#     with spec_path=docs/plans/my-spec.md plan_path=docs/plans/my-plan.md
+#     output_path=output/my-harness"
+
+name: "harness-refinement-loop"
+description: "While-loop convergence wrapper — iterates single-iteration until legal action rate converges"
+version: "1.0.0"
+author: "Harness Machine Bundle"
+tags: ["harness", "convergence", "while-loop", "thompson-sampling", "refinement"]
+
+context:
+  spec_path: ""      # Required: Path to harness specification document
+  plan_path: ""      # Required: Path to implementation plan document
+  output_path: ""    # Required: Where to write generated harness artifacts
+  converged: "false" # Loop control — updated by sub-recipe assessment result
+  iteration: "0"     # Current iteration counter — updated each cycle
+
+steps:
+  # ---------------------------------------------------------------------------
+  # Convergence Loop
+  # Repeatedly invokes harness-single-iteration.yaml until the evaluator signals
+  # convergence (legal action rate meets target) or max iterations is reached.
+  #
+  # Context updates each cycle from the sub-recipe's assessment JSON output:
+  #   converged ← assessment.converged
+  #   iteration ← assessment.iteration
+  # ---------------------------------------------------------------------------
+  - id: "refinement-cycle"
+    type: recipe
+    recipe: "harness-machine:recipes/harness-single-iteration.yaml"
+    context:
+      spec_path: "{{spec_path}}"
+      plan_path: "{{plan_path}}"
+      output_path: "{{output_path}}"
+      iteration: "{{iteration}}"
+      previous_critique: "{{critique}}"
+    while_condition: "{{converged}} != 'true'"
+    max_while_iterations: 60
+    break_when: "{{converged}} == 'true'"
+    update_context:
+      converged: "{{assessment.converged}}"
+      iteration: "{{assessment.iteration}}"
+    checkpoint_best: true
+    timeout: 3600
+    on_error: "continue"
+    on_timeout: "return_best"

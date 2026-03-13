@@ -1,0 +1,171 @@
+# Harness Single Iteration
+# The innermost sub-recipe — one generate/critique/refine/evaluate cycle.
+#
+# This is called repeatedly by harness-refinement-loop.yaml until convergence.
+# Each iteration runs the three-agent pipeline (generator → critic → refiner)
+# followed by independent evaluation measuring legal action rate.
+#
+# Refinement decision logic from the AutoHarness paper:
+#   - is_legal_action() returns True but action is invalid → refine BOTH functions
+#   - is_legal_action() returns False and action is invalid → refine only propose_action()
+#
+# Usage (via harness-refinement-loop.yaml):
+#   Not meant to be invoked directly. Invoked as a sub-recipe.
+
+name: "harness-single-iteration"
+description: "One generate/critique/refine/evaluate cycle for harness convergence"
+version: "1.0.0"
+author: "Harness Machine Bundle"
+tags: ["harness", "generation", "critique", "refinement", "evaluation", "convergence"]
+
+context:
+  spec_path: ""         # Path to harness specification document
+  plan_path: ""         # Path to implementation plan document
+  output_path: ""       # Where to write generated harness artifacts
+  iteration: "1"        # Current iteration number (passed from refinement loop)
+  previous_critique: "" # Critique from prior iteration (empty on first pass)
+
+steps:
+  # ---------------------------------------------------------------------------
+  # Step 1: Generate
+  # harness-generator produces constraint code from spec + plan.
+  # On iteration > 1, incorporates the previous critique as refinement guidance.
+  # ---------------------------------------------------------------------------
+  - id: "generate"
+    agent: "harness-machine:harness-generator"
+    prompt: |
+      Generate constraint harness code for this iteration.
+
+      SPEC: {{spec_path}}
+      PLAN: {{plan_path}}
+      OUTPUT PATH: {{output_path}}
+      ITERATION: {{iteration}}
+
+      {{#if previous_critique}}
+      PREVIOUS CRITIQUE (apply these refinements):
+      {{previous_critique}}
+
+      This is a refinement iteration. Apply the critic's feedback precisely.
+      Follow the refinement decision logic:
+      - If is_legal_action() returned True but action was invalid → refine BOTH propose_action() AND is_legal_action()
+      - If is_legal_action() returned False and action was invalid → refine ONLY propose_action()
+      {{else}}
+      This is the first iteration. Generate initial constraint code from the spec and plan.
+      {{/if}}
+
+      Read the spec and plan documents. Produce:
+      1. constraints.py — implements propose_action(board: str) -> str and is_legal_action(board: str, action: str) -> bool
+      2. behavior.yaml — Amplifier behavior wiring the hook
+      3. context.md — Environment description and constraint rationale
+
+      Write artifacts to {{output_path}}.
+      Return a summary of what was generated and key design decisions.
+    output: "generated"
+    timeout: 600
+
+  # ---------------------------------------------------------------------------
+  # Step 2: Critique
+  # harness-critic independently reviews the generated harness against the spec.
+  # Produces actionable feedback — either APPROVED or NEEDS CHANGES with specifics.
+  # ---------------------------------------------------------------------------
+  - id: "critique"
+    agent: "harness-machine:harness-critic"
+    prompt: |
+      Review the generated harness against the specification.
+
+      SPEC: {{spec_path}}
+      OUTPUT PATH: {{output_path}}
+      ITERATION: {{iteration}}
+
+      GENERATED ARTIFACT SUMMARY:
+      {{generated}}
+
+      Read the actual generated files at {{output_path}}.
+      Review for:
+      1. Coverage gaps — actions that should be constrained but aren't
+      2. Over-constraints — blocking valid actions
+      3. Edge cases — boundary conditions in the action space
+      4. Correctness of propose_action() — does it only propose legal moves?
+      5. Correctness of is_legal_action() — does it correctly identify legality?
+      6. Consistency — do both functions agree on what is legal?
+
+      End your review with exactly one of:
+      - "VERDICT: APPROVED" — harness correctly constrains the action space
+      - "VERDICT: NEEDS CHANGES — [list specific issues with each function]"
+    output: "critique"
+    timeout: 600
+
+  # ---------------------------------------------------------------------------
+  # Step 3: Refine
+  # harness-refiner applies the critic's feedback.
+  # Conditional: only runs if critique contains "NEEDS CHANGES".
+  # ---------------------------------------------------------------------------
+  - id: "refine"
+    condition: "{{critique}} contains 'NEEDS CHANGES'"
+    agent: "harness-machine:harness-refiner"
+    prompt: |
+      Apply the critic's feedback to improve the harness.
+
+      SPEC: {{spec_path}}
+      OUTPUT PATH: {{output_path}}
+      ITERATION: {{iteration}}
+
+      CRITIC FEEDBACK:
+      {{critique}}
+
+      ORIGINAL GENERATION:
+      {{generated}}
+
+      Apply the refinement decision logic from the AutoHarness paper:
+      - If critic found is_legal_action() returns True but action is invalid → refine BOTH functions
+      - If critic found is_legal_action() returns False and action is invalid → refine ONLY propose_action()
+      - If critic found coverage gaps → add missing constraint rules
+      - If critic found over-constraints → relax rules that block valid actions
+
+      Fix ONLY the issues identified. Do not change parts that were not critiqued.
+      Write updated artifacts to {{output_path}}.
+      Return a summary of all changes made and why.
+    output: "refined"
+    timeout: 600
+
+  # ---------------------------------------------------------------------------
+  # Step 4: Assess
+  # harness-evaluator independently measures legal action rate.
+  # Returns convergence JSON so the refinement loop can decide whether to stop.
+  # ---------------------------------------------------------------------------
+  - id: "assess"
+    agent: "harness-machine:harness-evaluator"
+    prompt: |
+      Evaluate the harness and measure its legal action rate.
+
+      SPEC: {{spec_path}}
+      OUTPUT PATH: {{output_path}}
+      ITERATION: {{iteration}}
+
+      CRITIQUE FROM THIS ITERATION:
+      {{critique}}
+
+      {{#if refined}}
+      REFINEMENT SUMMARY:
+      {{refined}}
+      {{/if}}
+
+      Run evaluation against the harness at {{output_path}}:
+      1. Read the spec to understand acceptance criteria and target legal action rate
+      2. Examine constraints.py — analyze coverage completeness
+      3. Test edge cases from the action space definition
+      4. Measure or estimate legal action rate based on constraint coverage analysis
+
+      Return ONLY a JSON object with this exact structure:
+      {
+        "converged": "true" or "false",
+        "legal_action_rate": "X.XX",
+        "iteration": "N",
+        "best_so_far": "path/to/output"
+      }
+
+      Set converged="true" if legal_action_rate meets or exceeds the target in the spec.
+      Set best_so_far to the output_path if this is the best result so far.
+    output: "assessment"
+    parse_json: true
+    timeout: 600
