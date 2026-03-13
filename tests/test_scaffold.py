@@ -500,7 +500,7 @@ class TestHookModule:
         content = _read_file(
             "modules/hooks-harness/amplifier_module_hooks_harness/__init__.py"
         )
-        assert "def mount" in content
+        assert "def mount(" in content
 
     def test_hooks_harness_pyproject_has_entry_point(self):
         content = _read_file("modules/hooks-harness/pyproject.toml")
@@ -543,6 +543,10 @@ class TestRuntime:
     def test_docker_compose_template_exists(self):
         path = os.path.join(BUNDLE_ROOT, "runtime", "docker-compose.template.yaml")
         assert os.path.isfile(path)
+
+    def test_docker_compose_template_has_project_root(self):
+        content = _read_file("runtime/docker-compose.template.yaml")
+        assert "{{project_root}}" in content
 
     def test_runtime_py_has_constraint_gate(self):
         content = _read_file("runtime/runtime.py")
