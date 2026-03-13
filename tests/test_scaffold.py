@@ -562,7 +562,7 @@ class TestRuntime:
 
     def test_cli_py_has_main(self):
         content = _read_file("runtime/cli.py")
-        assert "def main" in content
+        assert "def main(" in content
 
     def test_pyproject_template_has_harness_name(self):
         content = _read_file("runtime/pyproject.toml.template")
