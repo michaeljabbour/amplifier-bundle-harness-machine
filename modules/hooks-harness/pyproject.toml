@@ -1,0 +1,15 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "amplifier-module-hooks-harness"
+version = "0.1.0"
+description = "Generic constraint enforcement hook — dynamically loads any constraints.py and enforces via tool:pre"
+requires-python = ">=3.11"
+license = "MIT"
+# Zero declared dependencies — amplifier-core is a peer dependency provided by the host
+dependencies = []
+
+[project.entry-points."amplifier.modules"]
+hooks-harness = "amplifier_module_hooks_harness:mount"
