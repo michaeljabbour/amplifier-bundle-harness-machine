@@ -98,6 +98,55 @@ Your response must include:
 3. Summary of constraint functions implemented
 4. Any concerns or limitations noted
 
+### Required Output Files
+
+| File | Purpose |
+|------|---------|
+| `constraints.py` | The constraint logic — `is_legal_action()`, `validate_action()`, or `propose_action()` |
+| `test_constraints.py` | Unit tests verifying each constraint function |
+| `behavior.yaml` | Amplifier hook wiring — references hooks-harness module with git source URL |
+| `context.md` | Environment description, constraint rationale, known limitations |
+| `config.yaml` | Runtime configuration for the standalone CLI |
+| `system-prompt.md` | Agent mission statement and scope rules for the standalone agent |
+
+### config.yaml Format
+
+```yaml
+project_root: /path/to/project
+model: anthropic/claude-sonnet-4-20250514
+harness_type: action-verifier  # action-filter | action-verifier | code-as-policy
+max_retries: 3
+covered_tools:
+  - bash
+  - write_file
+  - edit_file
+allowed_env_vars:
+  - HOME
+  - PATH
+```
+
+### system-prompt.md Format
+
+```markdown
+You are a constrained agent for <environment>.
+
+## Mission
+<Agent mission — what task the agent is trying to accomplish>
+
+## Scope Rules
+- Only use tools listed in covered_tools
+- <environment-specific scope rules>
+
+## Retry Instructions
+When a tool call is rejected by the constraint gate:
+1. Read the rejection reason carefully
+2. Do NOT repeat the rejected action
+3. Try a different approach that satisfies the constraint
+
+## Environment Context
+<Environment-specific guidance, known limitations, useful patterns>
+```
+
 ## Red Flags — Stop and Report
 
 - Spec is ambiguous about what's legal vs illegal

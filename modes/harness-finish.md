@@ -45,11 +45,60 @@ ls -la <harness-output-path>/
 
 Package based on artifact tier:
 
-**Tier 1 — Nano-amplifier:**
-- Verify 3 files exist: behavior.yaml, constraints.py, context.md
-- Validate behavior.yaml parses as YAML
-- Run python_check on constraints.py
-- Ensure context.md documents all constraints
+**Tier 1 — Nano-amplifier (3 studs):**
+
+**Stud 1: Amplifier hook**
+
+Generate `behavior.yaml` that wires the harness into Amplifier:
+
+```yaml
+bundle:
+  name: <harness_name>
+  version: 0.1.0
+  description: Constraint harness for <environment>
+
+hooks:
+  - module: hooks-harness
+    source: git+https://github.com/<org>/<harness_name>@main
+    config:
+      constraints_path: ./constraints.py
+      harness_type: <action-filter|action-verifier|code-as-policy>
+      strict: true
+```
+
+**Stud 2: Standalone CLI**
+
+Copy the runtime/ scaffold into `standalone/<package_name>/`:
+- Copy `runtime/runtime.py`, `runtime/tools.py`, `runtime/cli.py` into the package directory
+- Copy `constraints.py`, `config.yaml`, `system-prompt.md` into the package directory
+- Stamp `pyproject.toml` from `runtime/pyproject.toml.template` (substitute `{{harness_name}}` and `{{package_name}}`)
+
+```
+standalone/
+  <package_name>/
+    cli.py
+    runtime.py
+    tools.py
+    constraints.py
+    config.yaml
+    system-prompt.md
+  pyproject.toml
+```
+
+**Stud 3: Docker (optional)**
+
+Ask user: "Would you like a Docker deployment? (yes/no)"
+
+If yes, create `docker/` directory and stamp templates:
+- Copy `runtime/Dockerfile.template` → `docker/Dockerfile` (substitute `{{harness_name}}`)
+- Copy `runtime/docker-compose.template.yaml` → `docker/docker-compose.yaml` (substitute `{{harness_name}}` and `{{project_root}}`)
+
+**Verification for all studs**
+
+- Validate `behavior.yaml` parses as YAML
+- Run `python_check` on `constraints.py`
+- Ensure `config.yaml` has required keys: `project_root`, `model`, `harness_type`, `max_retries`
+- Ensure `system-prompt.md` contains agent instructions
 
 **Tier 2 — Harness bundle:**
 - Verify bundle structure (bundle.md, behaviors/, modules/)

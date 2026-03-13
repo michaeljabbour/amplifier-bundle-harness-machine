@@ -462,3 +462,108 @@ class TestYamlValidity:
         with open(path) as f:
             data = yaml.safe_load(f.read())
         assert isinstance(data, dict), f"recipes/{recipe_name}.yaml did not parse as a dict"
+
+
+# ---------------------------------------------------------------------------
+# Hook module structural tests
+# ---------------------------------------------------------------------------
+
+
+class TestHookModule:
+    def test_modules_dir_exists(self):
+        assert os.path.isdir(os.path.join(BUNDLE_ROOT, "modules"))
+
+    def test_hooks_harness_dir_exists(self):
+        assert os.path.isdir(os.path.join(BUNDLE_ROOT, "modules", "hooks-harness"))
+
+    def test_hooks_harness_pyproject_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "modules", "hooks-harness", "pyproject.toml")
+        assert os.path.isfile(path)
+
+    def test_hooks_harness_package_dir_exists(self):
+        path = os.path.join(
+            BUNDLE_ROOT, "modules", "hooks-harness", "amplifier_module_hooks_harness"
+        )
+        assert os.path.isdir(path)
+
+    def test_hooks_harness_init_exists(self):
+        path = os.path.join(
+            BUNDLE_ROOT,
+            "modules",
+            "hooks-harness",
+            "amplifier_module_hooks_harness",
+            "__init__.py",
+        )
+        assert os.path.isfile(path)
+
+    def test_hooks_harness_init_exports_mount(self):
+        content = _read_file(
+            "modules/hooks-harness/amplifier_module_hooks_harness/__init__.py"
+        )
+        assert "def mount" in content
+
+    def test_hooks_harness_pyproject_has_entry_point(self):
+        content = _read_file("modules/hooks-harness/pyproject.toml")
+        assert "amplifier.modules" in content
+
+
+# ---------------------------------------------------------------------------
+# Runtime structural tests
+# ---------------------------------------------------------------------------
+
+
+class TestRuntime:
+    def test_runtime_dir_exists(self):
+        assert os.path.isdir(os.path.join(BUNDLE_ROOT, "runtime"))
+
+    def test_runtime_init_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "__init__.py")
+        assert os.path.isfile(path)
+
+    def test_runtime_py_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "runtime.py")
+        assert os.path.isfile(path)
+
+    def test_tools_py_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "tools.py")
+        assert os.path.isfile(path)
+
+    def test_cli_py_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "cli.py")
+        assert os.path.isfile(path)
+
+    def test_pyproject_template_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "pyproject.toml.template")
+        assert os.path.isfile(path)
+
+    def test_dockerfile_template_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "Dockerfile.template")
+        assert os.path.isfile(path)
+
+    def test_docker_compose_template_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "docker-compose.template.yaml")
+        assert os.path.isfile(path)
+
+    def test_runtime_py_has_constraint_gate(self):
+        content = _read_file("runtime/runtime.py")
+        assert "ConstraintGate" in content
+
+    def test_runtime_py_has_agent_loop(self):
+        content = _read_file("runtime/runtime.py")
+        assert "AgentLoop" in content
+
+    def test_tools_py_has_tool_executor(self):
+        content = _read_file("runtime/tools.py")
+        assert "ToolExecutor" in content
+
+    def test_cli_py_has_main(self):
+        content = _read_file("runtime/cli.py")
+        assert "def main" in content
+
+    def test_pyproject_template_has_harness_name(self):
+        content = _read_file("runtime/pyproject.toml.template")
+        assert "{{harness_name}}" in content
+
+    def test_dockerfile_template_has_harness_name(self):
+        content = _read_file("runtime/Dockerfile.template")
+        assert "{{harness_name}}" in content

@@ -2,16 +2,57 @@
 
 ## Three Artifact Tiers
 
-### Tier 1: Nano-Amplifier (3 files)
+### Tier 1: Nano-Amplifier (3 studs)
 
-The atomic unit of harness output. Every harness generation produces at minimum a nano-amplifier:
+The atomic unit of harness output. Every harness generation produces at minimum a nano-amplifier built from one brick and three studs:
 
+**The Brick** (generated, unique per harness):
 ```
 my-harness/
-  behavior.yaml        # Amplifier behavior: hooks config, mode reference
-  constraints.py       # Python: propose_action(), is_legal_action(), validate_action()
-  context.md           # Environment description, constraint rationale
+  constraints.py       # The constraint logic — is_legal_action(), validate_action(), propose_action()
 ```
+
+**Generated Files** (supporting artifacts):
+```
+my-harness/
+  config.yaml          # Runtime configuration for standalone CLI
+  context.md           # Environment description, constraint rationale
+  system-prompt.md     # Agent mission and scope rules
+  test_constraints.py  # Unit tests verifying each constraint function
+```
+
+**Stud 1: Amplifier Hook** — plug into any Amplifier session:
+```
+my-harness/
+  behavior.yaml        # Wires hooks-harness module with git source URL, constraints_path, harness_type, strict config
+```
+
+**Stud 2: Standalone CLI** — run without Amplifier:
+```
+my-harness/
+  standalone/
+    pyproject.toml                 # Stamped from runtime/pyproject.toml.template
+    <package_name>/
+      cli.py                       # Entry point: chat, check, audit subcommands
+      runtime.py                   # ConstraintGate + AgentLoop
+      tools.py                     # ToolExecutor (read_file, write_file, bash, grep, glob)
+      constraints.py               # Copy of the brick
+      config.yaml                  # Copy of runtime config
+      system-prompt.md             # Copy of system prompt
+```
+
+**Stud 3: Docker Container** (optional) — containerized deployment:
+```
+my-harness/
+  docker/
+    Dockerfile                     # Stamped from runtime/Dockerfile.template
+    docker-compose.yaml            # Stamped from runtime/docker-compose.template.yaml
+```
+
+**Three usage modes:**
+1. **Amplifier hook** — compose `behavior.yaml` via `includes:` in any bundle.md
+2. **Standalone CLI** — `pip install -e standalone/` then `<harness_name> chat`
+3. **Docker container** — `docker compose -f docker/docker-compose.yaml up`
 
 Any Amplifier bundle can compose a nano-amplifier via `includes:` in its bundle.md.
 
