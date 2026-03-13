@@ -55,8 +55,10 @@ def load_config(config_path: str) -> dict:
             user_config = yaml.safe_load(f.read())
         if isinstance(user_config, dict):
             config.update(user_config)
-    except (FileNotFoundError, ImportError):
+    except FileNotFoundError:
         pass
+    except ImportError:
+        print("Warning: pyyaml not installed, using default config", file=sys.stderr)
     return config
 
 
@@ -197,8 +199,15 @@ def run_audit(config: dict, transcript_path: str) -> None:
 
     gate = ConstraintGate(config["constraints_path"])
 
-    with open(transcript_path) as f:
-        transcript = json.load(f)
+    try:
+        with open(transcript_path) as f:
+            transcript = json.load(f)
+    except FileNotFoundError:
+        print(f"Error: transcript file not found: {transcript_path}", file=sys.stderr)
+        sys.exit(1)
+    except json.JSONDecodeError as exc:
+        print(f"Error: invalid JSON in transcript: {exc}", file=sys.stderr)
+        sys.exit(1)
 
     violations = 0
     total = 0
@@ -206,9 +215,13 @@ def run_audit(config: dict, transcript_path: str) -> None:
     for entry in transcript:
         if entry.get("tool_calls"):
             for tc in entry["tool_calls"]:
+                try:
+                    tool_name = tc["function"]["name"]
+                    params = json.loads(tc["function"]["arguments"])
+                except (KeyError, json.JSONDecodeError) as exc:
+                    print(f"Warning: skipping malformed tool_call entry: {exc}")
+                    continue
                 total += 1
-                tool_name = tc["function"]["name"]
-                params = json.loads(tc["function"]["arguments"])
                 is_legal, reason = gate.check(tool_name, params)
                 if not is_legal:
                     violations += 1
