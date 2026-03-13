@@ -1,0 +1,155 @@
+# amplifier-bundle-harness-machine
+
+Generate constraint harnesses for LLM agents — from tiny nano-amplifiers to enterprise-scale governance systems. Built on the AutoHarness paper (Lou et al., Google DeepMind, 2026), this bundle provides a seven-mode interactive pipeline and four automation recipes for systematically designing, generating, critiquing, refining, and evaluating constraint harnesses. Whether you're constraining a game-playing agent's action space or building a factory that generates harnesses for dozens of environments, harness-machine gives you the structure to do it rigorously and repeatably.
+
+## Seven-Mode Pipeline
+
+```
+  /harness-explore ──► /harness-spec ──► /harness-plan ──► /harness-execute
+        │                                                         │
+        │                                                         ▼
+        │                                                  /harness-verify
+        │                                                    │         │
+        │                                                    ▼         ▼
+        └──────────────────────── /harness-debug ◄── fail  pass ──► /harness-finish
+```
+
+Each mode has a focused role: **explore** maps the environment, **spec** designs the harness, **plan** chooses single vs. factory, **execute** runs the generator/critic/refiner pipeline, **verify** measures legal action rate, **finish** packages and delivers, **debug** handles failures at any stage.
+
+## Two-Track UX
+
+| Track | How | Best For |
+|-------|-----|----------|
+| **Interactive modes** | `/harness-explore` → `/harness-spec` → `/harness-plan` → `/harness-execute` → `/harness-verify` → `/harness-finish` | Hands-on sessions where you want control and visibility at each step |
+| **Factory automation** | `harness-development-cycle.yaml` or `harness-factory-generation.yaml` | End-to-end automation with approval gates; batch generation across environments |
+
+Both tracks produce the same artifact: a constraint harness packaged as a nano-amplifier. Modes give you the steering wheel; recipes give you cruise control.
+
+## Quick Start — Interactive Track
+
+```
+# Step 1: Enter explore mode and describe your target environment
+/harness-explore
+
+# Step 2: After feasibility assessment, design the harness spec
+/harness-spec
+
+# Step 3: Plan implementation (single harness or factory)
+/harness-plan
+
+# Step 4: Run the generator → critic → refiner pipeline
+/harness-execute
+
+# Step 5: Measure legal action rate and reward
+/harness-verify
+
+# Step 6: Package and deliver (merge, PR, or keep)
+/harness-finish
+
+# At any point: diagnose constraint failures or convergence plateaus
+/harness-debug
+```
+
+## Quick Start — Factory Track
+
+```python
+# Run end-to-end with approval gates between stages
+recipes.execute(
+    recipe_path="harness-machine:recipes/harness-development-cycle.yaml",
+    context={
+        "project_name": "my-agent",
+        "environment_description": "TextArena chess game",
+        "target_legal_action_rate": 0.95,
+    }
+)
+
+# Batch generation across multiple environments
+recipes.execute(
+    recipe_path="harness-machine:recipes/harness-factory-generation.yaml",
+    context={
+        "project_name": "game-agents",
+        "environments": ["chess", "poker", "go"],
+    }
+)
+```
+
+## Artifact Format
+
+Harness artifacts are delivered in three tiers based on scope:
+
+| Tier | Format | Contents | When to Use |
+|------|--------|----------|-------------|
+| **Nano** | `.amplifier/` directory | `behavior.yaml`, `constraints.py`, `context.md` | Single environment, single agent |
+| **Bundle** | Amplifier bundle | `bundle.md`, `behaviors/`, `modules/` | Reusable harness across projects |
+| **Machine** | `.harness-machine/` directory | `STATE.yaml`, recipes, Docker infrastructure | Factory: multiple environments, autonomous loop |
+
+## Available Commands
+
+| Command | Purpose | Next Step |
+|---------|---------|-----------|
+| `/harness-explore` | Understand environment, map action space, assess feasibility | `/harness-spec` |
+| `/harness-spec` | Design harness specification (type, scale, constraints, criteria) | `/harness-plan` |
+| `/harness-plan` | Plan implementation: single harness or factory machine | `/harness-execute` |
+| `/harness-execute` | Orchestrate generator → critic → refiner pipeline | `/harness-verify` |
+| `/harness-verify` | Evidence-based verification: legal action rate, reward measurement | `/harness-finish` or `/harness-debug` |
+| `/harness-finish` | Package and deliver: nano-amplifier, bundle, or factory | Session complete |
+| `/harness-debug` | Diagnose constraint failures, convergence plateaus, search errors | `/harness-verify` |
+
+## Available Agents
+
+| Agent | Purpose |
+|-------|---------|
+| `harness-machine:environment-analyst` | Explores target environment, maps action space, scores feasibility |
+| `harness-machine:spec-writer` | Produces harness specification from exploration results |
+| `harness-machine:plan-writer` | Creates implementation plan (single harness or factory machine) |
+| `harness-machine:harness-generator` | Generates `is_legal_action()` and `propose_action()` constraint code |
+| `harness-machine:harness-critic` | Reviews harness for coverage gaps, over-constraints, and edge cases |
+| `harness-machine:harness-refiner` | Improves harness from critic feedback using targeted refinement |
+| `harness-machine:harness-evaluator` | Independent measurement of legal action rate and reward signal |
+
+## Available Recipes
+
+| Recipe | Purpose |
+|--------|---------|
+| `harness-machine:recipes/harness-single-iteration.yaml` | One generate/critique/refine/evaluate cycle (inner loop) |
+| `harness-machine:recipes/harness-refinement-loop.yaml` | Convergence loop with Thompson sampling until target LAR reached |
+| `harness-machine:recipes/harness-development-cycle.yaml` | Full cycle with approval gates between explore/spec/plan/execute/verify/finish |
+| `harness-machine:recipes/harness-factory-generation.yaml` | Batch generation across multiple environments |
+
+## Skills Library
+
+- **harness-reference** — Complete reference tables: modes, agents, recipes, enums (harness types, scales, convergence strategies)
+- **constraint-design** — Three constraint layers (action filtering, reward shaping, state validation), composition patterns, common mistakes
+- **convergence-debugging** — Thompson sampling mechanics, plateau detection, search diagnostics, refinement decision logic
+
+```
+load_skill(search="harness")
+load_skill(skill_name="constraint-design")
+load_skill(skill_name="convergence-debugging")
+```
+
+## Prerequisites
+
+- [Amplifier](https://github.com/microsoft/amplifier) installed and configured
+- [amplifier-foundation](https://github.com/microsoft/amplifier-foundation) bundle (auto-installed via `includes`)
+
+## Installation
+
+```bash
+amplifier bundle install git+https://github.com/YOUR_ORG/amplifier-bundle-autoharness@main
+```
+
+Or clone and install locally:
+
+```bash
+git clone https://github.com/YOUR_ORG/amplifier-bundle-autoharness
+amplifier bundle install ./amplifier-bundle-autoharness
+```
+
+## Research Foundation
+
+This bundle implements the constraint harness methodology from **AutoHarness: Automated Harness Synthesis Using LLMs** (Lou et al., Google DeepMind, 2026, arXiv:2603.03329). The paper introduces a generate/critique/refine loop for synthesizing `is_legal_action()` and `propose_action()` functions, Thompson sampling for convergence, and a three-tier harness architecture (nano-amplifier → harness bundle → harness machine). The AutoHarness framework achieves high legal action rates across diverse environments by treating constraint generation as an iterative refinement problem with measurable acceptance criteria rather than a one-shot synthesis task.
+
+## License
+
+MIT
