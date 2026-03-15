@@ -61,6 +61,36 @@ contains:
 - Changelog entries for all versions between current and latest
 - Tier and deployment mode of the harness
 
+## Upgrade Intake Questions
+
+When the version gap introduces new features, the upgrade plan MUST present these
+decisions to the user **before** listing mechanical steps. Present each question
+with a recommendation based on what is missing vs. available in the new version.
+
+1. **Tier reconsideration**: "Your harness is currently tier={current_tier}.
+   v{new_version} supports all three tiers (pico/nano/micro). Do you want to:
+   (a) keep current tier, (b) upgrade tier, (c) downgrade tier?"
+
+2. **Deployment mode**: "v{new_version} supports deployment modes: standalone (CLI),
+   in-app (Python API), hybrid (service). Current: {current_mode}.
+   Add additional deployment modes?"
+
+3. **Feature enablement**: "v{new_version} adds these capabilities. Enable:
+   (a) streaming responses? (b) session persistence? (c) intent detection?
+   (d) rich CLI improvements?"
+
+4. **System prompt regeneration**: "Should the system prompt be regenerated to
+   reflect new capabilities?"
+
+5. **Source code migration**: "Should new scaffold files (api.py, service.py,
+   setup.sh) be added from the v{new_version} template?"
+
+The planner should present these as part of the upgrade plan, with recommendations
+based on what's missing vs. what's available in the new version.
+
+**pyproject.toml version:** The upgrade plan MUST include bumping pyproject.toml
+version to match the generated_version stamp being applied.
+
 ## Planning Process
 
 ### 1. Read the Version Diff Report
@@ -155,6 +185,16 @@ After all steps:
 1. Parse config.yaml — must be valid YAML with all required fields
 2. Run Python syntax check on constraints.py
 3. Run upgrade-checker — should report "up-to-date"
+
+## Revert Strategy
+
+<how to undo the upgrade if it fails or causes regressions>
+
+**Git revert** (if upgrade branch was used):
+  `git checkout main && git branch -D upgrade/{version}`
+
+**Filesystem revert** (fallback):
+  `cp -r {backup-dir}/* {harness-dir}/`
 ```
 
 ## Must NOT

@@ -297,3 +297,182 @@ class TestModeDetection:
         assert "/mode" in content, (
             "runtime/micro/cli.py must handle the /mode REPL command"
         )
+
+
+# ---------------------------------------------------------------------------
+# G1: Recipe schema — execute-upgrade.yaml steps must use id: not name:
+# ---------------------------------------------------------------------------
+
+
+class TestExecuteUpgradeRecipeStepSchema:
+    """G1: Steps within stages must use 'id:' not 'name:' as identifier."""
+
+    def test_steps_use_id_not_name_in_analysis_stage(self):
+        """Steps within the analysis stage must use id: not name:."""
+        content = _read_file("recipes/execute-upgrade.yaml")
+        parsed = yaml.safe_load(content)
+        assert "stages" in parsed, "execute-upgrade.yaml must have a stages section"
+        analysis_stage = next(
+            (s for s in parsed["stages"] if s.get("name") == "analysis"),
+            None,
+        )
+        assert analysis_stage is not None, "analysis stage not found"
+        for step in analysis_stage.get("steps", []):
+            assert "id" in step, (
+                f"Step {step!r} in analysis stage must use 'id:' not 'name:'"
+            )
+            assert "name" not in step, (
+                f"Step {step!r} in analysis stage must not use 'name:' — use 'id:'"
+            )
+
+    def test_steps_use_id_not_name_in_execution_stage(self):
+        """Steps within the execution stage must use id: not name:."""
+        content = _read_file("recipes/execute-upgrade.yaml")
+        parsed = yaml.safe_load(content)
+        execution_stage = next(
+            (s for s in parsed["stages"] if s.get("name") == "execution"),
+            None,
+        )
+        assert execution_stage is not None, "execution stage not found"
+        for step in execution_stage.get("steps", []):
+            assert "id" in step, (
+                f"Step {step!r} in execution stage must use 'id:' not 'name:'"
+            )
+            assert "name" not in step, (
+                f"Step {step!r} in execution stage must not use 'name:' — use 'id:'"
+            )
+
+
+# ---------------------------------------------------------------------------
+# G2: upgrade-planner.md must have intake questions + pyproject.toml bump
+# ---------------------------------------------------------------------------
+
+
+class TestUpgradePlannerIntakeFlow:
+    """G2: upgrade-planner.md must ask intake questions and require pyproject bump."""
+
+    def test_has_upgrade_intake_questions_section(self):
+        content = _read_file("agents/upgrade-planner.md")
+        assert "Upgrade Intake Questions" in content, (
+            "upgrade-planner.md must have an '## Upgrade Intake Questions' section"
+        )
+
+    def test_intake_asks_tier_reconsideration(self):
+        content = _read_file("agents/upgrade-planner.md")
+        assert "tier" in content.lower(), (
+            "Upgrade intake must ask about tier reconsideration"
+        )
+        # Check for the specific intake context — tier choices
+        assert "pico" in content and "nano" in content and "micro" in content, (
+            "Intake must mention all three tiers (pico/nano/micro)"
+        )
+
+    def test_intake_asks_deployment_mode(self):
+        content = _read_file("agents/upgrade-planner.md")
+        assert "deployment mode" in content.lower(), (
+            "Upgrade intake must ask about deployment modes"
+        )
+
+    def test_intake_asks_feature_enablement(self):
+        content = _read_file("agents/upgrade-planner.md")
+        assert "streaming" in content.lower() or "session persistence" in content.lower(), (
+            "Upgrade intake must mention new feature enablement options"
+        )
+
+    def test_requires_pyproject_version_bump(self):
+        content = _read_file("agents/upgrade-planner.md")
+        assert "pyproject.toml" in content, (
+            "upgrade-planner.md must require bumping pyproject.toml version"
+        )
+        assert "version" in content.lower(), (
+            "upgrade-planner.md must reference pyproject.toml version bump"
+        )
+
+
+# ---------------------------------------------------------------------------
+# G3: upgrade-checker.md and harness-upgrade.md — pyproject.toml version
+# ---------------------------------------------------------------------------
+
+
+class TestUpgradeCheckerPyprojectVersion:
+    """G3: upgrade-checker must flag pyproject.toml version inconsistency."""
+
+    def test_checker_mentions_pyproject_version_inconsistency(self):
+        content = _read_file("agents/upgrade-checker.md")
+        # Must mention checking pyproject.toml for version consistency
+        assert "pyproject.toml" in content, (
+            "upgrade-checker.md must check pyproject.toml version field"
+        )
+        assert "version" in content.lower(), (
+            "upgrade-checker.md must flag version inconsistency"
+        )
+
+    def test_harness_upgrade_mode_mentions_pyproject_bump(self):
+        content = _read_file("modes/harness-upgrade.md")
+        assert "pyproject.toml" in content, (
+            "modes/harness-upgrade.md must include a step to bump pyproject.toml version"
+        )
+
+
+# ---------------------------------------------------------------------------
+# G4: harness-upgrade.md must include git branch safety steps
+# ---------------------------------------------------------------------------
+
+
+class TestHarnessUpgradeGitBranchSafety:
+    """G4: harness-upgrade mode must create an upgrade branch before changes."""
+
+    def test_creates_upgrade_branch_before_changes(self):
+        content = _read_file("modes/harness-upgrade.md")
+        assert "git checkout -b upgrade/" in content, (
+            "modes/harness-upgrade.md must instruct creating an upgrade branch: "
+            "'git checkout -b upgrade/{new_version}'"
+        )
+
+    def test_presents_post_upgrade_branch_options(self):
+        content = _read_file("modes/harness-upgrade.md")
+        # Must offer merge, PR, or keep-for-review
+        assert "merge" in content.lower() and "pr" in content.lower() or \
+               "merge" in content.lower() and "branch" in content.lower(), (
+            "modes/harness-upgrade.md must present post-upgrade options "
+            "(merge, PR, or keep for review)"
+        )
+
+    def test_provides_revert_branch_command(self):
+        content = _read_file("modes/harness-upgrade.md")
+        assert "git checkout main" in content, (
+            "modes/harness-upgrade.md must include git revert instructions"
+        )
+
+
+# ---------------------------------------------------------------------------
+# G5: Revert documentation in harness-upgrade.md and upgrade-planner.md
+# ---------------------------------------------------------------------------
+
+
+class TestRevertDocumentation:
+    """G5: Revert strategy must be documented in mode and planner."""
+
+    def test_harness_upgrade_has_revert_strategy_section(self):
+        content = _read_file("modes/harness-upgrade.md")
+        assert "## Revert Strategy" in content, (
+            "modes/harness-upgrade.md must have a '## Revert Strategy' section"
+        )
+
+    def test_harness_upgrade_revert_includes_git_command(self):
+        content = _read_file("modes/harness-upgrade.md")
+        assert "git branch -D upgrade/" in content, (
+            "Revert Strategy must include 'git branch -D upgrade/{version}'"
+        )
+
+    def test_harness_upgrade_revert_includes_filesystem_fallback(self):
+        content = _read_file("modes/harness-upgrade.md")
+        assert "backup" in content.lower() and "cp" in content.lower(), (
+            "Revert Strategy must include filesystem backup/cp fallback"
+        )
+
+    def test_upgrade_planner_requires_revert_strategy_in_plan(self):
+        content = _read_file("agents/upgrade-planner.md")
+        assert "Revert Strategy" in content, (
+            "upgrade-planner.md must require a 'Revert Strategy' section in the plan"
+        )

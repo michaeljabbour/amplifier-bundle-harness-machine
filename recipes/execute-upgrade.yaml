@@ -10,7 +10,7 @@ stages:
   - name: analysis
     description: Check current version and produce an upgrade plan
     steps:
-      - name: check-version
+      - id: check-version
         description: Compare the harness version against the current harness-machine version
         agent: harness-machine:upgrade-checker
         instruction: |
@@ -21,7 +21,7 @@ stages:
           produce a structured upgrade report including all changelog entries
           for versions between the current and latest.
 
-      - name: plan-upgrade
+      - id: plan-upgrade
         description: Produce a detailed, ordered upgrade plan from the version diff
         agent: harness-machine:upgrade-planner
         instruction: |
@@ -44,7 +44,7 @@ stages:
   - name: execution
     description: Execute the approved upgrade plan
     steps:
-      - name: backup
+      - id: backup
         description: Create a timestamped backup of the harness directory before any changes
         type: bash
         command: |
@@ -53,7 +53,7 @@ stages:
           cp -r "{{target_path}}" "${BACKUP_DIR}"
           echo "Backup created at: ${BACKUP_DIR}"
 
-      - name: execute-upgrade
+      - id: execute-upgrade
         description: Apply the upgrade plan steps to the harness
         agent: harness-machine:upgrade-planner
         instruction: |
@@ -67,7 +67,7 @@ stages:
           A backup was already created in the previous step — proceed with
           applying the changes.
 
-      - name: validate
+      - id: validate
         description: Validate the upgraded harness — YAML parse and Python syntax checks
         type: bash
         command: |
@@ -91,7 +91,7 @@ stages:
             echo "INFO: constraints.py not found (may not be required for this tier)"
           fi
 
-      - name: report
+      - id: report
         description: Confirm upgrade success with a final version check
         agent: harness-machine:upgrade-checker
         instruction: |

@@ -90,6 +90,30 @@ Present the upgrade plan to the user. Highlight:
 
 Ask for explicit confirmation before proceeding.
 
+### Phase 4.5: Create Upgrade Branch (Git Safety)
+
+Before making any changes to the harness, create a dedicated upgrade branch:
+
+```bash
+git checkout -b upgrade/{new_version}
+```
+
+This keeps the current branch (`main`) untouched until the upgrade is validated.
+All upgrade changes land on the upgrade branch only.
+
+After all changes are applied and validated, present the user with these options:
+
+- **(a) Merge upgrade branch to main**: `git checkout main && git merge upgrade/{new_version}`
+- **(b) Create a PR from the upgrade branch**: `gh pr create --head upgrade/{new_version}`
+- **(c) Keep branch for manual review**: Leave `upgrade/{new_version}` as-is for inspection
+
+**To revert the upgrade at any point before merging:**
+`git checkout main && git branch -D upgrade/{new_version}` — main is untouched, all upgrade changes are discarded.
+
+**pyproject.toml version bump:** When applying the upgrade plan, always bump the
+`version` field in `pyproject.toml` to match the new `generated_version` stamp,
+alongside any changes to `bundle.md` and behaviors YAML.
+
 ### Phase 5: Execute Upgrade
 
 Use the `execute-upgrade` recipe for execution. The recipe includes:
@@ -123,6 +147,28 @@ evaluation and confirm the harness still performs correctly after the upgrade.
 | "The user said just do it, no need to show the plan" | Always present the plan. Approval is required. |
 | "The validation failed but it's probably fine" | Validation failures are blockers, not warnings. |
 | "I can apply the changes myself faster" | Use the recipe. It has the right gates and rollback path. |
+
+## Revert Strategy
+
+Always present the revert command to the user after upgrade completion so they
+know exactly how to undo the upgrade if anything goes wrong downstream.
+
+**Git revert** (preferred — if the upgrade branch strategy was used):
+```bash
+git checkout main && git branch -D upgrade/{version}
+```
+All upgrade changes are isolated on the upgrade branch. Deleting it leaves `main`
+completely untouched.
+
+**Filesystem revert** (fallback — if no git branch or branch was already merged):
+```bash
+cp -r {backup-dir}/* {harness-dir}/
+```
+The timestamped backup created in Phase 4.5 / Step 1 of the recipe is always
+available for this fallback.
+
+Always show both options after the upgrade completes so the user can act quickly
+if they discover a regression in verification.
 
 ## Announcement
 

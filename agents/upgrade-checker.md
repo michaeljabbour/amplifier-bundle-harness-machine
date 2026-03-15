@@ -107,6 +107,19 @@ Your response must include a structured upgrade report:
 - UNKNOWN: Cannot determine version status — config.yaml and pyproject.toml not found or missing generated_version field.
 ```
 
+## pyproject.toml Version Consistency
+
+As part of every upgrade check, verify `pyproject.toml` version consistency:
+
+1. Read the `version` field from `pyproject.toml` in the target harness directory.
+2. Compare it against the `generated_version` from `config.yaml`.
+3. If they differ, flag as a **version inconsistency** in your report:
+   - "pyproject.toml version ({pyproject_version}) does not match generated_version
+     ({config_version}). The upgrade must bump pyproject.toml to match."
+
+Include a `pyproject_version` field in your upgrade check report output.
+Flag version inconsistency as a required fix even when the harness is otherwise up-to-date.
+
 ## Must NOT
 
 - Modify any files in the target path
