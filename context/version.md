@@ -7,17 +7,28 @@ HARNESS_MACHINE_VERSION: 0.2.0
 ## Changelog
 
 ### 0.2.0 (2026-03-15)
+- Add version infrastructure with HARNESS_MACHINE_VERSION constant
+- Add three-tier runtime scaffolds (pico/nano/micro) with 10/13/18 files each
+- Add mission-architect and capability-advisor agents (9 total, later 11)
+- Add dynamic capability discovery via amplifier module/bundle list
+- Add capability picker with markdown checkbox interface
+- Add three deployment modes: standalone (cli.py), in-app (api.py), hybrid (service.py)
+- Add version stamping in generated config.yaml (generated_version, generated_by)
+- Add upgrade system: upgrade-checker agent, upgrade-planner agent, harness-upgrade mode
+- Add check-upgrade.yaml and execute-upgrade.yaml recipes
+- Add upgrade intake flow (tier, deployment mode, features, system prompt, source migration)
+- Add git branch safety for upgrades (upgrade/{version} branch)
+- Add revert documentation (git + filesystem)
+- Add constraint-spec-template.md with 8 categories of bash attack vectors
+- Add docs/DECISION-ARCHITECTURE.md (pico/nano/micro decision-making guide)
+- Fix execute-upgrade.yaml recipe schema (name: → id:)
+- Fix pyproject.toml version bump in upgrade flow
 
-- Add version infrastructure (`context/version.md`) with HARNESS_MACHINE_VERSION constant
-- Add `config.yaml.template` for all three tiers (pico/nano/micro) with version stamping fields
-- Add Deployment Mode enum to `harness-format.md` (standalone/in-app/hybrid)
-- Add entry points table for all three deployment modes
-- Add Version Stamping spec section to `harness-format.md` with `generated_by` field
-- Bump bundle version from 0.1.0 to 0.2.0 in `bundle.md` and `behaviors/harness-machine.yaml`
-
-### 0.1.0 (initial)
-
-- Initial release with 9 agents, 7 modes, 4 recipes, 3 skills
-- Three size tiers: pico / nano / micro
-- Dynamic capability discovery and mission-based naming
-- Three runtime scaffolds with standalone CLI and Docker support
+### 0.1.0 (2026-03-12)
+- Initial release: 7 modes, 7 agents, 4 recipes, 3 skills
+- Seven-mode pipeline: explore → spec → plan → execute → verify → finish + debug
+- Three-agent generation pipeline: generator → critic → refiner
+- Constraint engine with refinement decision logic from AutoHarness paper
+- Amplifier hook module (modules/hooks-harness) for tool:pre enforcement
+- Docker factory templates (Dockerfile, docker-compose, entrypoint, watchdog, monitor)
+- 4 reference examples (pico filesystem, developer tooling, domain library, enterprise governance)

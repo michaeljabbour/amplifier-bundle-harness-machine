@@ -175,9 +175,10 @@ bundle:
   description: Constraint harness for <environment>
 
 hooks:
-  - module: harness-constraints
-    source: ./constraints.py
+  - module: hooks-harness
+    source: git+https://github.com/michaeljabbour/amplifier-bundle-harness-machine@main#subdirectory=modules/hooks-harness
     config:
+      constraints_path: ./constraints.py
       harness_type: <action-filter|action-verifier|code-as-policy>
       strict: true
 ```

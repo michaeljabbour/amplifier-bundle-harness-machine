@@ -35,6 +35,15 @@ MAX_ITERATIONS: int = 50
 
 # ---------------------------------------------------------------------------
 # OpenAI-compatible tool schemas for all 7 tools
+#
+# NOTE: TOOL_SCHEMAS is intentionally defined inline in each tier (pico/nano/micro)
+# rather than imported from a shared location. Each tier's runtime.py is a
+# self-contained template that gets COPIED to the generated harness output
+# directory — the three tiers are never co-installed in the same Python package.
+# At generation time, only one tier's files are written to the output directory,
+# so cross-tier imports would be dead references. The duplication is load-bearing
+# by design. Do not extract to a shared module without restructuring the
+# generation stamping system.
 # ---------------------------------------------------------------------------
 
 TOOL_SCHEMAS: list[dict[str, Any]] = [

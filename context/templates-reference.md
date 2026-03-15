@@ -118,7 +118,7 @@ runtime. They look identical to Amplifier template variables but are completely 
 
 ## How Generation Works
 
-1. The `/harness-execute` mode (when `harness_scale=factory`) dispatches `machine-generator` agent
+1. The `/harness-execute` mode (when `harness_scale=factory`) dispatches `harness-machine:harness-generator` agent
 2. Agent reads the harness spec + plan to extract all variable values
 3. For each template file:
    a. Reads the template from `templates/`

@@ -14,6 +14,9 @@ hooks:
     source: git+https://github.com/microsoft/amplifier-bundle-modes@main#subdirectory=modules/hooks-mode
     config:
       search_paths:
+        # Note: @harness-machine: prefix is resolved by the hooks-mode module,
+        # not by the bundle loader. hooks-mode performs its own @mention resolution
+        # to locate mode YAML files within this bundle at runtime.
         - "@harness-machine:modes"
 
 tools:
@@ -25,6 +28,9 @@ tools:
     source: git+https://github.com/microsoft/amplifier-module-tool-skills@main
     config:
       skills:
+        # Note: @harness-machine: prefix is resolved by the tool-skills module,
+        # not by the bundle loader. tool-skills performs its own @mention resolution
+        # to locate skill directories within this bundle at runtime.
         - "@harness-machine:skills"
 
 agents:

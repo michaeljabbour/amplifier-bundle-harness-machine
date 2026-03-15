@@ -13,7 +13,7 @@ stages:
       - id: check-version
         description: Compare the harness version against the current harness-machine version
         agent: harness-machine:upgrade-checker
-        instruction: |
+        prompt: |
           Check the version of the mini-amplifier harness at: {{target_path}}
 
           Read its config.yaml to extract the generated_version field, compare
@@ -24,7 +24,7 @@ stages:
       - id: plan-upgrade
         description: Produce a detailed, ordered upgrade plan from the version diff
         agent: harness-machine:upgrade-planner
-        instruction: |
+        prompt: |
           Using the upgrade check report from the previous step, produce a
           complete ordered upgrade plan for the harness at: {{target_path}}
 
@@ -54,18 +54,99 @@ stages:
           echo "Backup created at: ${BACKUP_DIR}"
 
       - id: execute-upgrade
-        description: Apply the upgrade plan steps to the harness
-        agent: harness-machine:upgrade-planner
-        instruction: |
-          Execute the upgrade plan you produced in the analysis stage for the
-          harness at: {{target_path}}
+        description: Apply version bumps and config migrations to the harness
+        type: bash
+        command: |
+          set -euo pipefail
+          TARGET="{{target_path}}"
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_PATH="$(dirname ${TARGET})/$(basename ${TARGET})-backup-${TIMESTAMP}"
+          FILES_MODIFIED=()
 
-          Apply each step from the plan in order. After each step, validate
-          that it succeeded before proceeding to the next step. Preserve all
-          user-set values when migrating config fields.
+          echo "=== Applying upgrade to harness at ${TARGET} ==="
 
-          A backup was already created in the previous step — proceed with
-          applying the changes.
+          # 1. Update generated_version in config.yaml
+          if [ -f "${TARGET}/config.yaml" ]; then
+            LATEST=$(python3 -c "
+          import re, pathlib
+          txt = pathlib.Path('context/version.md').read_text()
+          m = re.search(r'HARNESS_MACHINE_VERSION:\s*(\S+)', txt)
+          print(m.group(1) if m else '0.2.0')
+          ")
+            python3 -c "
+          import yaml, pathlib
+          p = pathlib.Path('${TARGET}/config.yaml')
+          cfg = yaml.safe_load(p.read_text())
+          cfg['generated_version'] = '${LATEST}'
+          p.write_text(yaml.dump(cfg, default_flow_style=False))
+          print('Updated config.yaml generated_version to ${LATEST}')
+          "
+            FILES_MODIFIED+=("config.yaml")
+          fi
+
+          # 2. Update version in bundle.md if present
+          if [ -f "${TARGET}/bundle.md" ]; then
+            sed -i.bak "s/^  version: .*/  version: ${LATEST}/" "${TARGET}/bundle.md"
+            rm -f "${TARGET}/bundle.md.bak"
+            FILES_MODIFIED+=("bundle.md")
+            echo "Updated bundle.md version"
+          fi
+
+          # 3. Update version in behaviors/*.yaml if present
+          if ls "${TARGET}/behaviors/"*.yaml 2>/dev/null | head -1 > /dev/null; then
+            for f in "${TARGET}/behaviors/"*.yaml; do
+              sed -i.bak "s/^  version: .*/  version: ${LATEST}/" "${f}"
+              rm -f "${f}.bak"
+              FILES_MODIFIED+=("behaviors/$(basename ${f})")
+              echo "Updated ${f} version"
+            done
+          fi
+
+          # 4. Bump version in pyproject.toml
+          if [ -f "${TARGET}/pyproject.toml" ]; then
+            sed -i.bak "s/^version = .*/version = \"${LATEST}\"/" "${TARGET}/pyproject.toml"
+            rm -f "${TARGET}/pyproject.toml.bak"
+            FILES_MODIFIED+=("pyproject.toml")
+            echo "Updated pyproject.toml version"
+          fi
+
+          # 5. Validate modified files
+          echo ""
+          echo "=== Validation ==="
+          FAILED=0
+
+          if [ -f "${TARGET}/config.yaml" ]; then
+            python3 -c "import yaml; yaml.safe_load(open('${TARGET}/config.yaml'))" \
+              && echo "PASS: config.yaml is valid YAML" \
+              || { echo "FAIL: config.yaml parse error"; FAILED=1; }
+          fi
+
+          for f in "${TARGET}/behaviors/"*.yaml 2>/dev/null; do
+            [ -f "${f}" ] || continue
+            python3 -c "import yaml; yaml.safe_load(open('${f}'))" \
+              && echo "PASS: ${f} is valid YAML" \
+              || { echo "FAIL: ${f} parse error"; FAILED=1; }
+          done
+
+          for f in "${TARGET}/"*.py "${TARGET}/"**/*.py 2>/dev/null; do
+            [ -f "${f}" ] || continue
+            python3 -c "import ast; ast.parse(open('${f}').read())" \
+              && echo "PASS: ${f} syntax OK" \
+              || { echo "FAIL: ${f} syntax error"; FAILED=1; }
+          done
+
+          STATUS="success"
+          [ "${FAILED}" -eq 1 ] && STATUS="failed"
+
+          python3 -c "
+          import json
+          result = {
+            'status': '${STATUS}',
+            'backup_path': '${BACKUP_PATH}',
+            'files_modified': '${FILES_MODIFIED[@]:-}'.split() if '${FILES_MODIFIED[@]:-}' else []
+          }
+          print(json.dumps(result, indent=2))
+          "
 
       - id: validate
         description: Validate the upgraded harness — YAML parse and Python syntax checks
@@ -94,7 +175,7 @@ stages:
       - id: report
         description: Confirm upgrade success with a final version check
         agent: harness-machine:upgrade-checker
-        instruction: |
+        prompt: |
           Run a final version check on the upgraded harness at: {{target_path}}
 
           Confirm that the harness is now up-to-date with the current

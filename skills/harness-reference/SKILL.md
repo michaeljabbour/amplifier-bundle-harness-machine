@@ -44,6 +44,7 @@ Both tracks produce the same artifact: a **nano-amplifier**.
 | Verify | `/harness-verify` | Evidence-based measurement of legal action rate | harness-evaluator agent | read_file: safe, bash: safe, write: warn |
 | Finish | `/harness-finish` | Package as nano-amplifier, commit, present options | main agent | read_file: safe, bash: safe, write: warn |
 | Debug | `/harness-debug` | Diagnose convergence failures, constraint gaps | main agent | read_file: safe, bash: safe, write: BLOCKED |
+| Upgrade | `/harness-upgrade` | Check and apply upgrades to existing harnesses | upgrade-checker + upgrade-planner agents | read_file: safe, bash: safe, write: warn |
 
 **Mode transition graph (allowed_transitions):**
 
@@ -56,6 +57,7 @@ Both tracks produce the same artifact: a **nano-amplifier**.
 | harness-verify | harness-finish, harness-debug, harness-execute, harness-spec, harness-plan |
 | harness-finish | harness-execute, harness-explore — `allow_clear: true` (only mode that can exit) |
 | harness-debug | harness-verify, harness-explore, harness-execute |
+| harness-upgrade | harness-verify, harness-finish |
 
 ---
 
@@ -64,12 +66,16 @@ Both tracks produce the same artifact: a **nano-amplifier**.
 | Agent | Role | When to Use | Model Role |
 |-------|------|-------------|------------|
 | `harness-machine:environment-analyst` | Explores target, maps action space, assesses feasibility | MANDATORY — first step in /harness-explore | research, general |
+| `harness-machine:mission-architect` | Creates meaningful name, domain-specific system prompt, README, context docs | After exploration, before spec — delegate naming and documentation | reasoning, general |
+| `harness-machine:capability-advisor` | Recommends tier, tools, provider; produces pre-checked capability picker | After mission naming, before spec — delegate tier/tool decisions | reasoning, general |
 | `harness-machine:spec-writer` | Produces harness specification from exploration | MANDATORY — after exploration, delegate document creation | reasoning, general |
 | `harness-machine:plan-writer` | Creates implementation plan (single or factory) | MANDATORY — after spec is approved, delegate plan creation | reasoning, general |
 | `harness-machine:harness-generator` | Generates constraint code + nano-amplifier artifacts | MANDATORY — every generate step in /harness-execute | coding, general |
 | `harness-machine:harness-critic` | Reviews harness: coverage gaps, over-constraints, edge cases | MANDATORY — every critique step in /harness-execute | critique, reasoning, general |
 | `harness-machine:harness-refiner` | Improves harness from critic feedback (LLM as mutation operator) | MANDATORY — every refine step (when critique says NEEDS CHANGES) | coding, general |
 | `harness-machine:harness-evaluator` | Independent measurement: legal action rate, reward | MANDATORY — /harness-verify, assess step in single-iteration | critique, reasoning, general |
+| `harness-machine:upgrade-checker` | Reads target config.yaml, compares generated_version to current, reports diff | Use at start of /harness-upgrade or before re-generating an existing harness | reasoning, general |
+| `harness-machine:upgrade-planner` | Plans ordered upgrade steps from version diff (read-only, produces plan only) | After upgrade-checker report — delegate upgrade plan creation | reasoning, general |
 
 **Fresh agent per task:** Use `context_depth="none"` for generator/critic/refiner. Clean context = focused attention = quality output.
 
@@ -83,6 +89,8 @@ Both tracks produce the same artifact: a **nano-amplifier**.
 | `harness-machine:recipes/harness-refinement-loop.yaml` | While-loop convergence | When you need the autonomous generate/critique/refine loop |
 | `harness-machine:recipes/harness-development-cycle.yaml` | Staged recipe, 3 approval gates | Full interactive cycle: explore → spec → plan → execute → verify → finish |
 | `harness-machine:recipes/harness-factory-generation.yaml` | Foreach batch recipe | Batch generation across many environments using STATE.yaml |
+| `harness-machine:recipes/check-upgrade.yaml` | Simple sequential recipe | Check an existing harness for version drift — read-only, no changes |
+| `harness-machine:recipes/execute-upgrade.yaml` | Staged recipe with approval gate | Plan upgrade (analysis stage) → user approves → apply upgrade (execution stage) |
 
 ---
 

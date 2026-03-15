@@ -130,7 +130,7 @@ def propose_action(board: str) -> str:
 
 def validate_action(state: dict, action: dict) -> tuple[bool, str]:
     """Amplifier hook entry point (tool:pre)."""
-    ok = is_legal_action(str(state), json.dumps(action))
+    ok = is_legal_action(json.dumps(state), json.dumps(action))
     return (ok, "") if ok else (False, "Action violates filesystem boundary constraints.")
 ```
 

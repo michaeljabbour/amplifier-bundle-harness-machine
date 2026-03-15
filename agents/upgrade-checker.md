@@ -22,12 +22,16 @@ meta:
 
   model_role: [reasoning, general]
 tools:
+  # NOTE: tool-filesystem is included for READ operations only (read_file, list_directory).
+  # The MUST NOT rules below take precedence — write_file and edit_file MUST NOT be used.
   - module: tool-filesystem
     source: git+https://github.com/microsoft/amplifier-module-tool-filesystem@main
   - module: tool-search
     source: git+https://github.com/microsoft/amplifier-module-tool-search@main
   - module: tool-bash
     source: git+https://github.com/microsoft/amplifier-module-tool-bash@main
+    # NOTE: tool-bash is included for read-only commands (cat, ls, grep, python3 -c "import yaml...").
+    # The MUST NOT rules below take precedence — shell commands that write files MUST NOT be used.
 ---
 
 # Upgrade Checker

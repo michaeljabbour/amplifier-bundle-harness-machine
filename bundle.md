@@ -12,20 +12,6 @@ bundle:
 includes:
   - bundle: git+https://github.com/microsoft/amplifier-foundation@main
   - bundle: harness-machine:behaviors/harness-machine
-
-agents:
-  include:
-    - harness-machine:environment-analyst
-    - harness-machine:mission-architect
-    - harness-machine:capability-advisor
-    - harness-machine:spec-writer
-    - harness-machine:plan-writer
-    - harness-machine:harness-generator
-    - harness-machine:harness-critic
-    - harness-machine:harness-refiner
-    - harness-machine:harness-evaluator
-    - harness-machine:upgrade-checker
-    - harness-machine:upgrade-planner
 ---
 
 # Harness Machine

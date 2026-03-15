@@ -69,14 +69,33 @@ class TestBundleMd:
         assert fm["bundle"]["version"]
 
     def test_agents_include_has_eleven_entries(self):
-        fm = _parse_frontmatter(_read_file("bundle.md"))
-        agents = fm["agents"]["include"]
+        # bundle.md uses the thin bundle pattern — agents are registered in
+        # behaviors/harness-machine.yaml, not duplicated in bundle.md.
+        # This test verifies behaviors/harness-machine.yaml has all 11.
+        import pathlib
+        behavior_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "behaviors",
+            "harness-machine.yaml",
+        )
+        import yaml as _yaml
+        behavior = _yaml.safe_load(pathlib.Path(behavior_path).read_text())
+        agents = behavior["agents"]["include"]
         assert len(agents) == 11
 
     def test_agents_include_contains_all_eleven_agents(self):
-        fm = _parse_frontmatter(_read_file("bundle.md"))
-        # strip namespace prefix: "harness-machine:agent-name" → "agent-name"
-        agent_names = [entry.split(":")[-1] for entry in fm["agents"]["include"]]
+        # bundle.md uses the thin bundle pattern — agents are registered in
+        # behaviors/harness-machine.yaml, not duplicated in bundle.md.
+        # This test verifies behaviors/harness-machine.yaml has all 11.
+        import pathlib
+        behavior_path = os.path.join(
+            os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            "behaviors",
+            "harness-machine.yaml",
+        )
+        import yaml as _yaml
+        behavior = _yaml.safe_load(pathlib.Path(behavior_path).read_text())
+        agent_names = [entry.split(":")[-1] for entry in behavior["agents"]["include"]]
         for name in [
             "environment-analyst",
             "mission-architect",
@@ -90,7 +109,7 @@ class TestBundleMd:
             "upgrade-checker",
             "upgrade-planner",
         ]:
-            assert name in agent_names, f"Agent {name!r} not found in agents.include"
+            assert name in agent_names, f"Agent {name!r} not found in behavior agents.include"
 
     def test_includes_has_two_entries(self):
         fm = _parse_frontmatter(_read_file("bundle.md"))

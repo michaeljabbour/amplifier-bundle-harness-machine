@@ -1,8 +1,8 @@
 # amplifier-bundle-harness-machine
 
-Generate constraint harnesses for LLM agents — from tiny nano-amplifiers to enterprise-scale governance systems. Built on the AutoHarness paper (Lou et al., Google DeepMind, 2026), this bundle provides a seven-mode interactive pipeline and four automation recipes for systematically designing, generating, critiquing, refining, and evaluating constraint harnesses. Whether you're constraining a game-playing agent's action space or building a factory that generates harnesses for dozens of environments, harness-machine gives you the structure to do it rigorously and repeatably.
+Generate constraint harnesses for LLM agents — from tiny nano-amplifiers to enterprise-scale governance systems. Built on the AutoHarness paper (Lou et al., Google DeepMind, 2026), this bundle provides an eight-mode interactive pipeline and six automation recipes for systematically designing, generating, critiquing, refining, and evaluating constraint harnesses. Whether you're constraining a game-playing agent's action space or building a factory that generates harnesses for dozens of environments, harness-machine gives you the structure to do it rigorously and repeatably.
 
-## Seven-Mode Pipeline
+## Eight-Mode Pipeline
 
 ```
   /harness-explore ──► /harness-spec ──► /harness-plan ──► /harness-execute
@@ -12,9 +12,12 @@ Generate constraint harnesses for LLM agents — from tiny nano-amplifiers to en
         │                                                    │         │
         │                                                    ▼         ▼
         └──────────────────────── /harness-debug ◄── fail  pass ──► /harness-finish
+
+  Existing harness upgrades:
+  /harness-upgrade ──► check version ──► plan upgrade ──► (approval) ──► apply upgrade ──► /harness-verify
 ```
 
-Each mode has a focused role: **explore** maps the environment, **spec** designs the harness, **plan** chooses single vs. factory, **execute** runs the generator/critic/refiner pipeline, **verify** measures legal action rate, **finish** packages and delivers, **debug** handles failures at any stage.
+Each mode has a focused role: **explore** maps the environment, **spec** designs the harness, **plan** chooses single vs. factory, **execute** runs the generator/critic/refiner pipeline, **verify** measures legal action rate, **finish** packages and delivers, **debug** handles failures at any stage, **upgrade** checks and applies version upgrades to existing harnesses.
 
 ## Two-Track UX
 
@@ -52,25 +55,18 @@ Both tracks produce the same artifact: a constraint harness packaged as a nano-a
 
 ## Quick Start — Factory Track
 
-```python
+```
 # Run end-to-end with approval gates between stages
-recipes.execute(
-    recipe_path="harness-machine:recipes/harness-development-cycle.yaml",
-    context={
-        "project_name": "my-agent",
-        "environment_description": "TextArena chess game",
-        "target_legal_action_rate": 0.95,
-    }
-)
+recipes operation=execute recipe_path=@harness-machine:recipes/harness-development-cycle.yaml context={"target_description": "TextArena chess game agent", "output_dir": "output/chess-harness"}
 
 # Batch generation across multiple environments
-recipes.execute(
-    recipe_path="harness-machine:recipes/harness-factory-generation.yaml",
-    context={
-        "project_name": "game-agents",
-        "environments": ["chess", "poker", "go"],
-    }
-)
+recipes operation=execute recipe_path=@harness-machine:recipes/harness-factory-generation.yaml context={"environments": ["chess", "poker", "go"], "state_yaml_path": ".harness-machine/STATE.yaml", "output_dir": ".harness-machine/harnesses"}
+
+# Check if an existing harness needs upgrading
+recipes operation=execute recipe_path=@harness-machine:recipes/check-upgrade.yaml context={"target_path": "output/chess-harness"}
+
+# Plan and apply an upgrade (staged — requires approval between plan and apply)
+recipes operation=execute recipe_path=@harness-machine:recipes/execute-upgrade.yaml context={"target_path": "output/chess-harness"}
 ```
 
 ## Artifact Format
@@ -94,6 +90,7 @@ Harness artifacts are delivered in three tiers based on scope:
 | `/harness-verify` | Evidence-based verification: legal action rate, reward measurement | `/harness-finish` or `/harness-debug` |
 | `/harness-finish` | Package and deliver: nano-amplifier, bundle, or factory | Session complete |
 | `/harness-debug` | Diagnose constraint failures, convergence plateaus, search errors | `/harness-verify` |
+| `/harness-upgrade` | Check and apply version upgrades to existing harnesses | `/harness-verify` |
 
 ## Decision Architecture: Pico vs Nano vs Micro
 
@@ -116,12 +113,16 @@ For the full comparison with decision flowcharts, capability matrices, and real-
 | Agent | Purpose |
 |-------|---------|
 | `harness-machine:environment-analyst` | Explores target environment, maps action space, scores feasibility |
+| `harness-machine:mission-architect` | Creates meaningful name, domain-specific system prompt, README, context docs |
+| `harness-machine:capability-advisor` | Recommends tier, tools, provider; produces pre-checked capability picker |
 | `harness-machine:spec-writer` | Produces harness specification from exploration results |
 | `harness-machine:plan-writer` | Creates implementation plan (single harness or factory machine) |
 | `harness-machine:harness-generator` | Generates `is_legal_action()` and `propose_action()` constraint code |
 | `harness-machine:harness-critic` | Reviews harness for coverage gaps, over-constraints, and edge cases |
 | `harness-machine:harness-refiner` | Improves harness from critic feedback using targeted refinement |
 | `harness-machine:harness-evaluator` | Independent measurement of legal action rate and reward signal |
+| `harness-machine:upgrade-checker` | Reads target config.yaml, compares version against current, reports diff |
+| `harness-machine:upgrade-planner` | Plans ordered upgrade steps from version diff (read-only) |
 
 ## Available Recipes
 
@@ -131,6 +132,8 @@ For the full comparison with decision flowcharts, capability matrices, and real-
 | `harness-machine:recipes/harness-refinement-loop.yaml` | Convergence loop with Thompson sampling until target LAR reached |
 | `harness-machine:recipes/harness-development-cycle.yaml` | Full cycle with approval gates between explore/spec/plan/execute/verify/finish |
 | `harness-machine:recipes/harness-factory-generation.yaml` | Batch generation across multiple environments |
+| `harness-machine:recipes/check-upgrade.yaml` | Check existing harness for version drift — read-only, no changes |
+| `harness-machine:recipes/execute-upgrade.yaml` | Plan and execute upgrade migration (staged: plan → approve → apply) |
 
 ## Skills Library
 
