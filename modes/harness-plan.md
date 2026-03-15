@@ -39,6 +39,20 @@ You CANNOT write files in this mode. write_file and edit_file are blocked.
 
 **Spec required:** A harness specification must exist from `/harness-spec`. If no spec exists, recommend `/harness-spec` first.
 
+## Plan Shape by Tier
+
+The `tier` from the spec (set during `/harness-explore` or `/harness-spec`) determines the plan complexity:
+
+| Tier | Plan Complexity | Extra Config Files | Notes |
+|------|-----------------|--------------------|-------|
+| **pico** | Simple | 0 | Constraints only. No config.yaml extras, no streaming, no session. Basic 3-file output. |
+| **nano** | Medium | 4 extra config files | Adds streaming config, session persistence, provider config, tool config. |
+| **micro** | Complex | 5 extra config files + mode definitions | Adds all nano files plus mode definitions, recipe config, delegation config. |
+
+For pico: plan only constraint functions and test cases.
+For nano: plan also includes streaming setup, session handling, provider configuration.
+For micro: plan also includes mode definitions, recipe wiring, delegation setup, approval gate config.
+
 ## Plan Shape by Scale
 
 The `harness_scale` from the spec determines the plan structure:

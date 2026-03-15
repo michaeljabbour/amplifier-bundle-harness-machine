@@ -40,10 +40,12 @@ Do NOT delegate investigation, invoke any generation skill, or recommend a harne
 </HARD-GATE>
 
 When entering harness-explore mode, create this todo checklist immediately:
-- [ ] Understand what the user wants to constrain
-- [ ] Ask clarifying questions about the action space (one at a time)
-- [ ] Delegate to environment-analyst for systematic investigation
-- [ ] Present feasibility assessment to user
+- [ ] Understand the BUILD mission the user wants to accomplish
+- [ ] Ask clarifying questions like a brainstorm session (one at a time)
+- [ ] Delegate to environment-analyst for systematic investigation with dynamic discovery
+- [ ] Delegate to mission-architect for meaningful naming
+- [ ] Delegate to capability-advisor for tier, tools, and provider recommendation
+- [ ] Present unified summary: feasibility, proposed name, recommended tier, capability picker, blockers
 - [ ] Transition to /harness-spec
 
 ## The Process
@@ -68,24 +70,64 @@ Through focused questioning:
 
 ### Phase 3: Delegate Investigation
 
-Once you understand the target, delegate to the environment-analyst:
+Once you understand the target, run three delegations in sequence.
+
+#### Phase 3a: Environment Analysis with Dynamic Discovery
+
+Delegate to the environment-analyst with dynamic discovery enabled:
 
 ```
 delegate(
   agent="harness-machine:environment-analyst",
-  instruction="Explore the following environment for harness generation feasibility: [environment description]. Map the action space, identify legal/illegal action boundaries, assess whether constraints can be defined programmatically. Target: [what the user described]. Context: [key answers from dialogue].",
+  instruction="Explore the following environment for harness generation feasibility: [environment description]. Map the action space, identify legal/illegal action boundaries, assess whether constraints can be defined programmatically. Use dynamic discovery to find relevant files. Target: [what the user described]. Context: [key answers from dialogue].",
   context_depth="recent",
   context_scope="conversation"
 )
 ```
 
-### Phase 4: Present Feasibility Assessment
+#### Phase 3b: Mission Naming Delegation
 
-When the analyst returns, present the results to the user:
-- Environment map: what actions exist, action space characteristics
-- Feasibility assessment: CAN this be harnessed? Confidence level?
-- Recommended harness_type and harness_scale
-- Any blockers or risks identified
+Once you have the environment analysis, delegate to mission-architect for a meaningful name:
+
+```
+delegate(
+  agent="harness-machine:mission-architect",
+  instruction="Generate a meaningful mini-amplifier name for this BUILD mission. Environment: [environment description]. Mission: [what the agent will do]. Capability profile: [key capabilities needed]. Propose a name following the {tier}-amplifier-{mission-slug} pattern and confirm it is not reserved.",
+  context_depth="recent",
+  context_scope="conversation"
+)
+```
+
+#### Phase 3c: Capability Recommendation Delegation
+
+Delegate to capability-advisor for tier, tools, and provider selection:
+
+```
+delegate(
+  agent="harness-machine:capability-advisor",
+  instruction="Recommend tier, tools, and provider for this mini-amplifier. Environment: [environment description]. Mission: [mission statement]. Feasibility assessment: [from Phase 3a]. Recommend: tier (pico/nano/micro), tool set, provider, and bash constraints if applicable.",
+  context_depth="recent",
+  context_scope="conversation"
+)
+```
+
+### Phase 4: Present Unified Summary and Capability Picker
+
+When all three delegations return, present a unified summary to the user:
+
+**Present:**
+- **Feasibility:** CAN this be harnessed? Confidence level? Action space characteristics.
+- **Proposed name:** The mission-architect's recommended name (e.g., `nano-amplifier-chess-guardian`)
+- **Recommended tier:** pico / nano / micro with rationale
+- **Capability picker:** Let the user confirm or adjust the tool set and provider selections
+- **Blockers:** Any risks or ambiguities that need resolution
+
+**User reviews picker and approves name:**
+Ask the user to confirm the proposed name and review capability selections. Present as a checklist they can adjust.
+
+**Amplifier escalation warning:**
+If the environment analysis detected that the user may need a full Amplifier bundle (not just a mini-amplifier), surface this warning clearly:
+> ⚠️ Amplifier escalation detected: [reason]. This mission may exceed mini-amplifier scope. Consider `/harness-spec` for a full harness bundle instead.
 
 **Feasibility gate:** If the action space is too ambiguous, verification is purely subjective, or constraints cannot be defined programmatically, recommend stopping. Not every environment can be harnessed. Say so clearly.
 

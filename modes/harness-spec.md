@@ -47,6 +47,22 @@ Do NOT delegate spec creation until you have presented EACH section and the user
 
 Before starting, check for relevant skills: `load_skill(search="harness")` and `load_skill(search="constraint")`.
 
+### Phase 0: Confirm Tier and Name
+
+Before any design work, confirm the tier and name selections from `/harness-explore`.
+
+**If `/harness-explore` was completed:**
+- Confirm: "I see the recommended tier is [tier] and proposed name is [name]. Are these still correct?"
+- Confirm capability selections and bash constraints carry over.
+- If the user wants to change either, update before proceeding.
+
+**If `/harness-explore` was skipped:**
+- Gather tier, name, capabilities, and bash constraints now through dialogue.
+- Ask: "What tier are you targeting? (pico / nano / micro)"
+- Ask: "What should we name this mini-amplifier?"
+- Ask: "Which tools should it have access to?"
+- Ask: "Are there any bash constraints (restricted commands)?"
+
 ### Phase 1: Choose Harness Type
 
 Present the three types with trade-offs specific to the user's environment:
@@ -93,7 +109,7 @@ When all sections are validated:
 ```
 delegate(
   agent="harness-machine:spec-writer",
-  instruction="Write the harness specification for: [name]. Save to docs/plans/YYYY-MM-DD-<name>-harness-spec.md. Include all validated sections: harness_type=[type], harness_scale=[scale], constraints=[list], acceptance_criteria=[criteria], environment=[description]. Here is the complete validated specification: [all sections]",
+  instruction="Write the harness specification for: [name]. Save to docs/plans/YYYY-MM-DD-<name>-harness-spec.md. Include all validated sections: tier=[pico|nano|micro], mission=[mission statement], name=[proposed name], harness_type=[type], harness_scale=[scale], capabilities=[tool list], bash_constraints=[constraint rules], constraints=[list], acceptance_criteria=[criteria], environment=[description]. Here is the complete validated specification: [all sections]",
   context_depth="recent",
   context_scope="conversation"
 )

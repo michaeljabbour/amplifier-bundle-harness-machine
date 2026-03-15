@@ -51,6 +51,10 @@ delegate(
   instruction="""Generate constraint code for: [harness name]
 
 Harness type: [action-filter|action-verifier|code-as-policy]
+Tier: [pico|nano|micro]
+Capability selections: [tool list and provider from /harness-explore]
+Mission statement: [what this mini-amplifier is for]
+System prompt draft: [initial system prompt text derived from mission and capabilities]
 Environment: [description]
 Constraints from spec: [constraint list]
 

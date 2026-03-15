@@ -91,6 +91,31 @@ NO FIXES WITHOUT ROOT CAUSE INVESTIGATION FIRST.
 3. Check: does the harness expect a different input format?
 4. Is the evaluation metric calculated correctly?
 
+### Failure Mode 5: Tier-Specific Feature Issues
+
+**Symptom:** A feature that should exist at this tier doesn't work — streaming broken on nano, recipes fail on micro, imports error on any tier.
+
+**Feature/Config/CLI/Import Troubleshooting Table:**
+
+| Feature | Tier | Symptom | Config Check | CLI Check | Import Check |
+|---------|------|---------|--------------|-----------|--------------|
+| Streaming | nano+ | Output doesn't stream | `streaming_config.yaml` has `enabled: true`? | `<name> chat --stream` exits with error? | `from runtime import StreamingRuntime` fails? |
+| Session persistence | nano+ | History lost between turns | `session_config.yaml` has `persist: true`? | `<name> chat --session test` creates file? | `from runtime import SessionStore` fails? |
+| Provider switching | nano+ | Wrong model used | `provider_config.yaml` has correct `provider:` and `model:`? | `<name> check --provider` reports correct provider? | Provider client import fails? |
+| Dynamic context | micro | Context not loaded | `dynamic_context.md` exists at expected path? | `<name> chat` shows context in system prompt? | Context loader import fails? |
+| Mode switching | micro | `/mode` commands not recognized | `modes/` directory exists with valid YAML files? | `<name> chat --list-modes` shows expected modes? | Mode module import fails? |
+| Recipes | micro | Recipe execution fails | `recipes/` directory exists with valid YAML files? | `<name> recipe --list` shows expected recipes? | Recipe runner import fails? |
+| Delegation | micro | Sub-agent not dispatched | `delegation_config.yaml` has correct agent specs? | `<name> delegate --dry-run` shows plan? | Delegation module import fails? |
+| Approval gates | micro | Gate not triggered | `approval_config.yaml` has correct gate triggers? | Approval gate fires on expected action? | ApprovalGate import fails? |
+
+**Investigation steps:**
+1. Identify which feature is failing and what tier the harness targets
+2. Check the config file listed in the table — is it present and correctly structured?
+3. Run the CLI check command from the table
+4. Try the import check to isolate import errors from config errors
+5. If import fails → likely missing dependency or scaffold was incomplete
+6. If config check fails → tier scaffold was generated incorrectly
+
 ## The Four Phases
 
 ### Phase 1: Reproduce and Investigate (YOU do this)

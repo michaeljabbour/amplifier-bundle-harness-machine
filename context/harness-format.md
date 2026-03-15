@@ -1,5 +1,17 @@
 # Harness Artifact Format
 
+## Size Tiers
+
+Each mini-amplifier is built to one of three size tiers. The tier determines which runtime scaffold files are included and which features are available.
+
+| Tier | Runtime Scaffold | Features |
+|------|-----------------|----------|
+| **pico** | Minimal: cli.py, runtime.py, constraints.py, config.yaml, system-prompt.md, behavior.yaml, setup.sh, context.md, pyproject.toml (9 files) | Constraints only. No streaming, no session, no provider config. Basic toolset. |
+| **nano** | Standard: pico + tools.py, streaming_config.yaml, session_config.yaml, provider_config.yaml (13 files) | Adds streaming response, session persistence, provider/model switching, full tool executor. |
+| **micro** | Full: nano + modes/, recipes/, delegation_config.yaml, approval_config.yaml, dynamic_context.md (18 files) | Adds mode switching, recipe execution, sub-agent delegation, approval gates, dynamic context loading. |
+
+Tiers are cumulative — micro includes everything nano has, nano includes everything pico has.
+
 ## Three Artifact Tiers
 
 ### Tier 1: Nano-Amplifier (3 studs)

@@ -83,6 +83,17 @@ Skip any step = lying, not verifying
 3. Validate all recipe files parse as valid YAML
 4. Dry-run one iteration to verify pipeline works
 
+### mini-amplifier CLI (all tiers)
+
+For any tier (pico, nano, micro) that produces a standalone CLI, verify the CLI works end-to-end:
+
+1. **CLI starts with check subcommand:** Run `<harness_name> check` — verify it exits 0 with no import errors
+2. **Chat mode initializes:** Run `<harness_name> chat --dry-run` — verify chat mode starts and prints the system prompt
+3. **System prompt matches capabilities:** Read the generated `system-prompt.md` — verify it accurately describes the mission and references the selected tool capabilities
+4. **Config loads with required keys:** Run `python -c "import yaml; c=yaml.safe_load(open('config.yaml')); assert 'model' in c and 'tier' in c"` — verify config has required keys
+5. **All selected tools functional:** Run a smoke test for each tool enabled in the capability selections — verify no import errors or missing dependencies
+6. **Amplifier hook loads via yaml.safe_load:** Run `python -c "import yaml; yaml.safe_load(open('behavior.yaml'))"` — verify the hook YAML parses cleanly
+
 ## Delegation During Verification
 
 `delegate` is on WARN — the first call is blocked with a reminder. This is intentional.

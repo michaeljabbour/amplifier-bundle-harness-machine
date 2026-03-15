@@ -4,6 +4,38 @@
 
 LLMs can automatically generate constraint code that achieves 100% legal action rates — but only with the right generation loop. Raw generation fails. Iterative refinement with antagonistic review and quantitative evaluation converges reliably.
 
+## Three-Tier Architecture
+
+Mini-amplifiers are built to one of three tiers. Each tier builds on the previous, adding capabilities while increasing complexity and cost.
+
+### Pico — Minimal Agent
+
+**Use cases:** Single-purpose constraint agents, quick prototypes, simple validators, agents with one clear action domain.
+
+**What it includes:** Constraint logic only. Basic CLI (chat + check). No streaming, no session, no provider config. 9 files total.
+
+**When to choose pico:** The agent does one thing, needs minimal tooling, and response latency is not critical. Examples: a chess-move validator, a simple code-style checker, a content filter.
+
+### Nano — Standard Agent
+
+**Use cases:** Production agents with streaming responses, session memory, provider flexibility, and a full tool set.
+
+**What it includes:** Everything pico has, plus streaming config, session persistence, provider switching, and a complete tool executor (read_file, write_file, bash, grep, glob). 13 files total.
+
+**When to choose nano:** The agent needs to maintain context across a conversation, stream responses to users, or switch between LLM providers. The standard tier for most real-world mini-amplifiers.
+
+### Micro — Orchestrating Agent
+
+**Use cases:** Complex agents that need to switch modes, run recipes, delegate to sub-agents, or enforce approval gates on high-risk actions.
+
+**What it includes:** Everything nano has, plus mode definitions, recipe YAML files, delegation config, approval gates, and dynamic context loading. 18 files total.
+
+**When to choose micro:** The agent has multiple operating modes (e.g., planning mode vs. execution mode), needs to run structured workflows, delegate subtasks, or require human approval before high-risk actions.
+
+---
+
+**Each tier builds on the previous:** Micro includes everything nano has. Nano includes everything pico has. You can upgrade a pico to nano by adding the four config files — no rewrite needed.
+
 ## Seven Components
 
 ### 1. Progressive Specification

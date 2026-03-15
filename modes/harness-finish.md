@@ -66,24 +66,45 @@ hooks:
       strict: true
 ```
 
-**Stud 2: Standalone CLI**
+**Stud 2: Standalone CLI (tier-aware scaffold)**
 
-Copy the runtime/ scaffold into `standalone/<package_name>/`:
-- Copy `runtime/runtime.py`, `runtime/tools.py`, `runtime/cli.py` into the package directory
-- Copy `constraints.py`, `config.yaml`, `system-prompt.md` into the package directory
-- Stamp `pyproject.toml` from `runtime/pyproject.toml.template` (substitute `{{harness_name}}` and `{{package_name}}`)
+Copy the runtime/ scaffold into `standalone/<package_name>/` based on tier:
+
+| Tier | File Count | Files Included |
+|------|-----------|----------------|
+| **pico** | 9 files | cli.py, runtime.py, constraints.py, config.yaml, system-prompt.md, behavior.yaml, pyproject.toml, setup.sh, context.md |
+| **nano** | 13 files | All pico files + tools.py, streaming_config.yaml, session_config.yaml, provider_config.yaml |
+| **micro** | 18 files | All nano files + modes/ directory (mode definitions), recipes/ (recipe config), delegation_config.yaml, approval_config.yaml, dynamic_context.md |
+
+**Directory structure:**
 
 ```
 standalone/
   <package_name>/
-    cli.py
-    runtime.py
-    tools.py
-    constraints.py
-    config.yaml
-    system-prompt.md
-  pyproject.toml
+    cli.py                   # Entry point: chat, check, audit subcommands
+    runtime.py               # ConstraintGate + AgentLoop
+    constraints.py           # Copy of the brick
+    config.yaml              # Runtime configuration (includes tier field)
+    system-prompt.md         # Stamped from mission + capabilities
+    behavior.yaml            # Amplifier hook
+    context.md               # Environment description
+    [nano+] tools.py         # ToolExecutor for selected tools
+    [nano+] streaming_config.yaml
+    [nano+] session_config.yaml
+    [nano+] provider_config.yaml
+    [micro+] modes/          # Mode definition files
+    [micro+] recipes/        # Recipe YAML files
+    [micro+] delegation_config.yaml
+    [micro+] approval_config.yaml
+    [micro+] dynamic_context.md
+  pyproject.toml             # Stamped from runtime/pyproject.toml.template
+  setup.sh                   # Generated from tier template: installs deps, sets up env
 ```
+
+**Generate setup.sh from tier template:**
+- Stamp `runtime/setup.sh.template` → `setup.sh` (substitute `{{harness_name}}`, `{{tier}}`, `{{package_name}}`)
+- For nano/micro: include streaming/session dependency install steps
+- For micro: include mode and recipe validation steps
 
 **Stud 3: Docker (optional)**
 
@@ -118,7 +139,13 @@ git log --oneline main..HEAD
 git diff --stat main
 ```
 
-Present: what was generated, evaluation metrics, artifact location.
+Present a structured summary:
+- **Meaningful name:** [the approved mini-amplifier name, e.g., `nano-amplifier-chess-guardian`]
+- **Tier:** [pico / nano / micro] — [file count] files
+- **Tools:** [list of enabled tools from capability selections]
+- **Provider:** [selected provider and model]
+- **Artifact path:** `standalone/<package_name>/` — ready to `pip install -e`
+- **Evaluation metrics:** legal action rate [X%], iterations run [N]
 
 ### Step 4: Present Exactly 4 Options
 
