@@ -109,7 +109,7 @@ class StdinSource(EventSource):
         Yields:
             Event instances parsed from each stdin line.
         """
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         reader = asyncio.StreamReader()
         protocol = asyncio.StreamReaderProtocol(reader)
         await loop.connect_read_pipe(lambda: protocol, sys.stdin)
@@ -301,7 +301,8 @@ class PicoService:
 
             with open(config_path) as f:
                 return yaml.safe_load(f) or {}
-        except Exception:
+        except Exception as exc:
+            _emit_error(f"Failed to load config from {config_path}: {exc}")
             return {}
 
     # ------------------------------------------------------------------
@@ -336,7 +337,7 @@ class PicoService:
 
     def _setup_signal_handlers(self) -> None:
         """Register SIGTERM / SIGINT handlers for graceful shutdown."""
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
 
         def _handle_signal(sig: int) -> None:
             sig_name = signal.Signals(sig).name
@@ -379,14 +380,19 @@ class PicoService:
     # Main entry point
     # ------------------------------------------------------------------
 
-    async def start(self) -> None:
+    async def start(self, _service_name: str = "PicoService") -> None:
         """Start the event processing loop.
 
         Reads events from the source, processes each, and emits JSON
         results to stdout. Stops cleanly on SIGTERM / SIGINT.
+
+        Args:
+            _service_name: Display name used in startup/shutdown log lines.
+                Subclasses pass their own name so log messages identify the
+                correct tier without duplicating the loop implementation.
         """
         self._setup_signal_handlers()
-        _emit_info("PicoService starting")
+        _emit_info(f"{_service_name} starting")
 
         async for event in self._source.listen():
             if self._stopping:
@@ -398,7 +404,7 @@ class PicoService:
             if self._stopping:
                 break
 
-        _emit_info("PicoService stopped")
+        _emit_info(f"{_service_name} stopped")
 
 
 # ---------------------------------------------------------------------------

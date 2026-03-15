@@ -26,8 +26,6 @@ from pico.service import (
     Event,
     EventSource,
     PicoService,
-    _emit_info,
-    _emit_result,
 )
 
 
@@ -169,25 +167,20 @@ class NanoService(PicoService):
     # Main entry point (override to announce NanoService)
     # ------------------------------------------------------------------
 
-    async def start(self) -> None:
+    async def start(self, _service_name: str = "") -> None:
         """Start the nano event processing loop with session support.
 
-        Reads events from the source, routes to session-aware agents,
-        and emits JSON results to stdout.
+        Delegates to PicoService.start() with the NanoService display name
+        so the shared event loop lives in one place.
+
+        Args:
+            _service_name: Override display name (default: auto-generated from
+                streaming config). Accepts the same parameter as the parent so
+                the override is Liskov-compatible.
         """
-        self._setup_signal_handlers()
-        _emit_info(
-            f"NanoService starting (streaming={'enabled' if self._streaming_enabled else 'disabled'})"
-        )
-
-        async for event in self._source.listen():
-            if self._stopping:
-                break
-
-            result = await self._process_event(event)
-            _emit_result(result)
-
-            if self._stopping:
-                break
-
-        _emit_info("NanoService stopped")
+        if not _service_name:
+            _service_name = (
+                f"NanoService (streaming="
+                f"{'enabled' if self._streaming_enabled else 'disabled'})"
+            )
+        await super().start(_service_name=_service_name)

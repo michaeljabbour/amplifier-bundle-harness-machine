@@ -39,7 +39,13 @@ Usage::
 
 from __future__ import annotations
 
+import logging
 from typing import Any, AsyncIterator
+
+_log = logging.getLogger(__name__)
+
+# Chunk size used when simulating token-by-token streaming from a full response
+_DEFAULT_STREAM_CHUNK_SIZE = 50
 
 
 # ---------------------------------------------------------------------------
@@ -195,15 +201,20 @@ class NanoAgent:
             content = response.get("content") or ""
 
             # Yield the content in chunks (simulate token streaming)
-            chunk_size = 50
-            for i in range(0, max(len(content), 1), chunk_size):
-                yield content[i : i + chunk_size]
+            for i in range(0, max(len(content), 1), _DEFAULT_STREAM_CHUNK_SIZE):
+                yield content[i : i + _DEFAULT_STREAM_CHUNK_SIZE]
 
             # Update agent history
             agent.messages.append({"role": "assistant", "content": content})
 
-        except Exception:
-            # Fallback: run normally and yield as single chunk
+        except Exception as exc:
+            # Log the streaming failure so operators can diagnose it
+            _log.warning("Streaming failed, falling back to run(): %s", exc)
+            # Remove the optimistically-appended user message so process_turn
+            # doesn't insert it a second time (duplicate history corruption)
+            _user_msg = {"role": "user", "content": prompt}
+            if agent.messages and agent.messages[-1] == _user_msg:
+                agent.messages.pop()
             response = await agent.process_turn(prompt)
             yield response
 

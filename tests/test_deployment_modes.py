@@ -13,25 +13,11 @@ Tests validate:
 from __future__ import annotations
 
 import ast
-import importlib.util
 from pathlib import Path
-
-import pytest
 
 # Root of the bundle repo
 BUNDLE_ROOT = Path(__file__).parent.parent
 RUNTIME_ROOT = BUNDLE_ROOT / "runtime"
-
-
-def _load_module(tier: str, module_name: str):
-    """Load a runtime module by tier and name."""
-    path = RUNTIME_ROOT / tier / f"{module_name}.py"
-    spec = importlib.util.spec_from_file_location(
-        f"{tier}.{module_name}", path
-    )
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
 
 
 def _read_source(tier: str, module_name: str) -> str:
@@ -50,7 +36,9 @@ def _has_import(source: str, module_name: str) -> bool:
     for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
-                if alias.name == module_name or alias.name.startswith(f"{module_name}."):
+                if alias.name == module_name or alias.name.startswith(
+                    f"{module_name}."
+                ):
                     return True
         elif isinstance(node, ast.ImportFrom):
             if node.module == module_name or (
@@ -135,7 +123,9 @@ class TestPicoService:
     def test_event_source_abc(self):
         """pico/service.py must define EventSource ABC with listen() method."""
         source = _read_source("pico", "service")
-        assert "class EventSource" in source, "pico/service.py must define EventSource class"
+        assert "class EventSource" in source, (
+            "pico/service.py must define EventSource class"
+        )
         assert "def listen" in source or "async def listen" in source, (
             "EventSource must have a listen() method"
         )
@@ -154,7 +144,9 @@ class TestPicoService:
     def test_pico_service_class(self):
         """pico/service.py must define PicoService class."""
         source = _read_source("pico", "service")
-        assert "class PicoService" in source, "pico/service.py must define PicoService class"
+        assert "class PicoService" in source, (
+            "pico/service.py must define PicoService class"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -222,9 +214,7 @@ class TestNanoService:
     def test_streaming_support(self):
         """nano/service.py must support streaming in config or class."""
         source = _read_source("nano", "service")
-        assert "stream" in source.lower(), (
-            "nano/service.py must support streaming"
-        )
+        assert "stream" in source.lower(), "nano/service.py must support streaming"
 
 
 # ---------------------------------------------------------------------------
