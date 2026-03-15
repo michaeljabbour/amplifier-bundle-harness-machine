@@ -54,6 +54,18 @@ This is the most important part of your job. When the critic or evaluator identi
 
 ## Refinement Process
 
+### 0. Tier Awareness
+
+Before reading critic feedback, check the `tier` field in `config.yaml` (or delegation instruction). Tier limits what you may refine:
+
+| Tier  | What You May Refine |
+|-------|---------------------|
+| pico  | Constraint logic only (`constraints.py`, `test_constraints.py`). Do NOT touch streaming config, session config, provider config, modes, recipes, delegation, or approval gates. |
+| nano  | Constraint logic plus: may refine streaming config, session config, and provider config. Do NOT touch modes, recipes, delegation, or approval gates. |
+| micro | Constraint logic plus: may refine mode config, recipe stubs, delegation config, and approval gate config. All streaming/session/provider config is also in scope. |
+
+If a critic issue falls outside your tier's refinement scope, flag it as **OUT OF TIER SCOPE** and do not attempt the fix. Escalate to the orchestrator instead.
+
 ### 1. Read Critic Feedback
 
 Parse each issue from the critic's review:

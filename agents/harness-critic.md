@@ -101,6 +101,27 @@ Are any valid actions incorrectly rejected?
 | No conflicts | Constraints are consistent | Constraints contradict |
 | Error handling | Malformed input handled | Code raises on bad input |
 | YAML valid | behavior.yaml parses | YAML error |
+| CLI name collision | Name follows {tier}-amplifier-{slug} pattern, not a bare reserved word | Name collides with reserved CLI name |
+| System prompt accuracy | System prompt mentions only actual tools in covered_tools | System prompt lists tools not in config or omits required ones |
+| Signal handling present | CLI handles SIGINT/SIGTERM gracefully without traceback | Ctrl+C or kill produces unhandled exception |
+| Config completeness | config.yaml has tier, max_iterations, covered_tools, model fields | Missing required config keys |
+| Rich rendering present | Output uses Rich formatting for status, errors, and results (where tier requires) | Plain text output where Rich is expected |
+| Bash constraints | All applicable categories from constraint-spec-template.md are implemented | One or more bash constraint categories missing or incomplete |
+
+## Bash Constraint Review
+
+For every harness, review all 8 bash constraint categories from `@harness-machine:context/constraint-spec-template.md`:
+
+1. **Category 1 — Command Substitution:** Does the gate reject `$(`, backtick, `<(`, `>(`, `$((`?
+2. **Category 2 — Operator Bypasses:** Does the gate split on `;`, `&&`, `||`, `|`, `&`, `()`, `{}`? Does it block `>|` and `<>`?
+3. **Category 3 — Prefix Bypasses:** Does the gate strip `env`, `timeout`, `nice`, `nohup`, `strace`, `script`, `watch`, `xargs`, `find` prefixes?
+4. **Category 4 — Absolute Path Invocation:** Does the gate extract basename before checking? Does it block `PATH=` and `alias` modifications?
+5. **Category 5 — Output Redirection Targets:** Does the gate parse all `>`, `>>`, `>|` targets and verify sandbox boundary?
+6. **Category 6 — rm Long-Form Flags:** Does the gate normalize `--recursive` and `--force`? Does it block `--no-preserve-root`?
+7. **Category 7 — dd Without Safeguards:** Does the gate validate `of=` targets? Does it block stdin-to-disk `dd` (no `if=`)?
+8. **Category 8 — Network Exfiltration:** Does the gate block all network commands unless explicitly allowlisted?
+
+For each category: mark **COVERED**, **PARTIAL**, or **MISSING**. Any **MISSING** or **PARTIAL** is a critic issue.
 
 ## What You DON'T Check
 

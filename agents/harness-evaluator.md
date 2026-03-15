@@ -75,6 +75,17 @@ You independently measure harness quality. You are the ONLY source of truth for 
 4. Check for unsubstituted template variables
 5. Dry-run validation (does the pipeline start without errors?)
 
+### For mini-amplifier CLI verification (all tiers)
+
+After generating the standalone CLI artifact, verify the following 6 checks:
+
+1. **CLI starts with check subcommand:** Run `<cli-name> check` — verify it exits 0 and prints a summary of loaded constraints without entering agent mode
+2. **Chat mode initializes:** Run `<cli-name> chat --dry-run` (or equivalent) — verify the agent loop initializes, loads config, and prints the system prompt header without making any LLM calls
+3. **System prompt accuracy:** Read `system-prompt.md` — verify every tool mentioned matches an entry in `covered_tools` in `config.yaml`; no phantom tools, no missing tools
+4. **Config loads with required keys:** Load `config.yaml` via `yaml.safe_load` — verify presence of required keys: `model`, `tier`, `max_iterations`, `covered_tools`, `harness_type`
+5. **All selected tools functional:** For each tool in `covered_tools`, verify the tool module can be imported and initialized without error (dry instantiation, no actual execution)
+6. **Amplifier hook loads via yaml.safe_load:** Load `behavior.yaml` via `yaml.safe_load` — verify the hook wiring is valid YAML, references a known hooks module, and contains no unsubstituted template variables (e.g., `{{variable}}`)
+
 ## Convergence Assessment
 
 After evaluation, produce a convergence assessment JSON:

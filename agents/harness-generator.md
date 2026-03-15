@@ -49,6 +49,38 @@ From the delegation instruction, extract:
 - Constraint list: specific rules to implement
 - Output path: where to write files
 
+### 1b. Determine Generation Scope by Tier
+
+Based on the `tier` field in the spec, determine what you generate vs what comes from scaffold:
+
+| Tier  | You Generate | Comes from Scaffold |
+|-------|-------------|---------------------|
+| pico  | `constraints.py`, `test_constraints.py`, `context.md`, `config.yaml`, `system-prompt.md` | `behavior.yaml`, `setup.sh`, CLI wrapper |
+| nano  | `constraints.py`, `test_constraints.py`, `context.md`, `config.yaml`, `system-prompt.md`, streaming config | `behavior.yaml`, `setup.sh`, session config scaffold |
+| micro | `constraints.py`, `test_constraints.py`, `context.md`, `config.yaml`, `system-prompt.md`, mode config, recipe stubs | `behavior.yaml`, `setup.sh`, delegation config scaffold, approval gate scaffold |
+
+If tier is not specified, default to `pico` and note the assumption in your response.
+
+### 1c. Reserved CLI Name Check
+
+Before writing any files, verify the proposed CLI name does not collide with reserved Amplifier names.
+
+**Reserved names (bare word):**
+
+- `amplifier`
+- `amp`
+- `harness`
+- `bundle`
+- `recipe`
+- `module`
+
+**Collision rules:**
+
+- A **bare reserved word** is a collision: `amplifier` → blocked
+- A **full hyphenated name** is NOT a collision: `pico-amplifier-chess-safety` → allowed
+- A name containing a reserved word as a **prefix or suffix in a compound** is allowed: `nano-amplifier-k8s-auditor` → allowed
+- If a collision is detected, stop and report: `BLOCKED: proposed name '<name>' collides with reserved CLI name '<reserved>'. Propose an alternative using the {tier}-amplifier-{mission-slug} pattern.`
+
 ### 2. Generate Constraint Code
 
 Write `constraints.py` with the required functions:
@@ -115,7 +147,9 @@ Your response must include:
 project_root: /path/to/project
 model: anthropic/claude-sonnet-4-20250514
 harness_type: action-verifier  # action-filter | action-verifier | code-as-policy
+tier: pico  # pico | nano | micro
 max_retries: 3
+max_iterations: 5  # maximum critic/refine rounds before escalation
 covered_tools:
   - bash
   - write_file

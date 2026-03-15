@@ -43,13 +43,47 @@ You write well-structured harness specification documents from validated designs
 ```markdown
 # [Environment Name] Harness Specification
 
+## Mission
+[Agent mission from mission-architect: what task the constrained agent is trying to accomplish,
+the operational context, and what success looks like for the end user]
+
+## Proposed Name
+`{tier}-amplifier-{mission-slug}`
+
+Examples: `pico-amplifier-chess-safety`, `nano-amplifier-k8s-auditor`, `micro-amplifier-genomics-pipeline`
+
+## Tier Selection
+- **Selected tier:** [pico | nano | micro]
+- **Rationale:** [Why this tier was chosen — from capability-advisor output]
+  - pico: constraints only, no streaming, no session management, minimal tooling
+  - nano: may include streaming, session config, provider selection
+  - micro: may include modes, recipes, delegation, approval gates
+
+## Capability Selections
+[From capability-advisor output — the filled Capability Picker]
+- **Provider:** [anthropic/claude-* | openai/gpt-* | azure/gpt-* | other]
+- **Tools:** [list of selected tools from capability-advisor recommendation]
+- **Features:** [streaming | sessions | rich-output | other selected features]
+- **Deployment:** [standalone CLI | embedded library | factory artifact]
+
+## Bash Constraints
+[Which bash constraint categories apply to this harness — see @harness-machine:context/constraint-spec-template.md]
+- [ ] Category 1 — Command Substitution
+- [ ] Category 2 — Operator Bypasses
+- [ ] Category 3 — Prefix Bypasses
+- [ ] Category 4 — Absolute Path Invocation
+- [ ] Category 5 — Output Redirection Targets
+- [ ] Category 6 — rm Long-Form Flags
+- [ ] Category 7 — dd Without Safeguards
+- [ ] Category 8 — Network Exfiltration
+
 ## Environment
 [What environment is being constrained, action space description]
 
 ## Harness Configuration
 - **harness_type:** [action-filter | action-verifier | code-as-policy]
 - **harness_scale:** [nano | single | library | factory | self-improving]
-- **artifact_tier:** [Tier 1: nano-amplifier | Tier 2: harness bundle | Tier 3: harness machine]
+- **artifact_tier:** [pico | nano | micro]
 
 ## Constraints
 ### Constraint 1: [Name]
@@ -67,7 +101,7 @@ You write well-structured harness specification documents from validated designs
 ## Acceptance Criteria
 - **Legal action rate target:** [X%]
 - **Reward threshold (if code-as-policy):** [value]
-- **Maximum iterations:** [N]
+- **Maximum iterations:** [N] (critic rounds: 4–5 per iteration before escalation)
 - **Patience:** [N iterations before plateau diagnosis]
 
 ## Target Environment

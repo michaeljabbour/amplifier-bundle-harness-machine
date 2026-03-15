@@ -39,7 +39,15 @@ You write implementation plans for constraint harness generation from validated 
 @harness-machine:context/harness-format.md
 @harness-machine:context/pattern.md
 
-## Plan Shape by Scale
+## Plan Shape by Tier and Scale
+
+### Tier Complexity Table
+
+| Tier | Complexity | Critic Rounds per Iteration | Notes |
+|------|------------|----------------------------|-------|
+| pico | simple     | 4–5 explicit critic rounds | constraints only, no streaming, no session management |
+| nano | medium     | 4–5 explicit critic rounds | may include streaming, session config, provider selection |
+| micro | complex   | 4–5 explicit critic rounds | may include modes, recipes, delegation, approval gates |
 
 ### For nano / single scale
 
@@ -47,8 +55,9 @@ Produce a TDD-style task plan:
 
 1. **Task list:** Each constraint function as a separate task
 2. **Per task:** function signature, test cases, acceptance criteria
-3. **Iteration budget:** How many generate/critique/refine cycles
+3. **Iteration budget:** How many generate/critique/refine cycles (4–5 critic rounds each)
 4. **Evaluation strategy:** Test environments, random seeds, step count
+5. **setup.sh generation task:** Script that scaffolds the mini-amplifier CLI directory, installs dependencies, and verifies the environment
 
 ### For library scale
 
@@ -56,7 +65,7 @@ Produce a batch generation plan:
 
 1. **Skill inventory:** Which domain skills need constraints
 2. **Composition strategy:** How nano-amplifiers compose into a bundle
-3. **Per-skill plan:** Constraint functions, tests, iteration budget
+3. **Per-skill plan:** Constraint functions, tests, iteration budget per skill
 4. **Integration plan:** How composed bundle is tested
 
 ### For factory scale
