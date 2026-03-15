@@ -82,6 +82,69 @@ DEFAULT_SYSTEM_PROMPT = (
 )
 
 # ---------------------------------------------------------------------------
+# Intent detection
+# ---------------------------------------------------------------------------
+
+INTENT_PATTERNS: dict[str, list[str]] = {
+    "harness-verify": ["review", "verify", "evaluate", "check", "validate", "test"],
+    "harness-plan": ["plan", "planning", "design", "spec", "specification"],
+    "harness-debug": ["debug", "fix", "broken", "failing", "error", "issue", "problem"],
+    "harness-explore": ["help", "start", "explore", "what", "how", "begin", "new"],
+    "harness-execute": [
+        "work",
+        "build",
+        "generate",
+        "create",
+        "run",
+        "execute",
+        "implement",
+    ],
+}
+
+
+def detect_intent(user_input: str) -> str | None:
+    """Detect the likely mode the user wants based on their input.
+
+    Returns the mode name if a strong keyword match is found, or None if
+    no clear intent is detected.
+
+    Args:
+        user_input: The raw user message text.
+
+    Returns:
+        A mode name string (e.g. 'harness-debug'), or None.
+    """
+    lowered = user_input.lower()
+    for mode_name, keywords in INTENT_PATTERNS.items():
+        if any(kw in lowered for kw in keywords):
+            return mode_name
+    return None
+
+
+def format_intent_suggestion(mode_name: str) -> str:
+    """Format a suggestion string for a detected intent mode.
+
+    Args:
+        mode_name: The detected mode name.
+
+    Returns:
+        A human-readable suggestion string referencing the /mode command.
+    """
+    descriptions: dict[str, str] = {
+        "harness-verify": "verify or evaluate a harness",
+        "harness-plan": "plan a harness implementation",
+        "harness-debug": "debug constraint or convergence issues",
+        "harness-explore": "explore an environment and get started",
+        "harness-execute": "build or generate a harness",
+    }
+    description = descriptions.get(mode_name, mode_name)
+    return (
+        f"Tip: It looks like you want to {description}. "
+        f"Type /mode {mode_name} to switch to the guided workflow mode."
+    )
+
+
+# ---------------------------------------------------------------------------
 # Config + prompt loading
 # ---------------------------------------------------------------------------
 
@@ -413,6 +476,12 @@ def cmd_chat(
 
             # TODO: wire approval_gate into process_turn() tool-call path
             # so user-initiated turns also pass through the approval gate
+
+            # Intent detection — suggest a mode if the input looks like a workflow
+            intent = detect_intent(user_input)
+            if intent is not None:
+                suggestion = format_intent_suggestion(intent)
+                print(suggestion)
 
             try:
                 response = asyncio.run(agent.process_turn(user_input))

@@ -1,0 +1,101 @@
+name: execute-upgrade
+description: |
+  Staged recipe that checks the current harness version, plans the upgrade,
+  waits for user approval, then executes the upgrade with backup and validation.
+
+context:
+  target_path: ""  # required: path to the mini-amplifier harness to upgrade
+
+stages:
+  - name: analysis
+    description: Check current version and produce an upgrade plan
+    steps:
+      - name: check-version
+        description: Compare the harness version against the current harness-machine version
+        agent: harness-machine:upgrade-checker
+        instruction: |
+          Check the version of the mini-amplifier harness at: {{target_path}}
+
+          Read its config.yaml to extract the generated_version field, compare
+          it against HARNESS_MACHINE_VERSION from context/version.md, and
+          produce a structured upgrade report including all changelog entries
+          for versions between the current and latest.
+
+      - name: plan-upgrade
+        description: Produce a detailed, ordered upgrade plan from the version diff
+        agent: harness-machine:upgrade-planner
+        instruction: |
+          Using the upgrade check report from the previous step, produce a
+          complete ordered upgrade plan for the harness at: {{target_path}}
+
+          Include every required step with action, file-path, before/after
+          details, and risk level. Step 1 must always be a backup step.
+          Flag any constraint changes as high-risk.
+
+    approval:
+      required: true
+      default: deny
+      message: |
+        Review the upgrade plan above. The upgrade will modify files in {{target_path}}.
+        A backup will be created before any changes are made.
+
+        Type 'approve' to execute the upgrade, or 'deny' to cancel.
+
+  - name: execution
+    description: Execute the approved upgrade plan
+    steps:
+      - name: backup
+        description: Create a timestamped backup of the harness directory before any changes
+        type: bash
+        command: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          BACKUP_DIR="$(dirname {{target_path}})/$(basename {{target_path}})-backup-${TIMESTAMP}"
+          cp -r "{{target_path}}" "${BACKUP_DIR}"
+          echo "Backup created at: ${BACKUP_DIR}"
+
+      - name: execute-upgrade
+        description: Apply the upgrade plan steps to the harness
+        agent: harness-machine:upgrade-planner
+        instruction: |
+          Execute the upgrade plan you produced in the analysis stage for the
+          harness at: {{target_path}}
+
+          Apply each step from the plan in order. After each step, validate
+          that it succeeded before proceeding to the next step. Preserve all
+          user-set values when migrating config fields.
+
+          A backup was already created in the previous step — proceed with
+          applying the changes.
+
+      - name: validate
+        description: Validate the upgraded harness — YAML parse and Python syntax checks
+        type: bash
+        command: |
+          echo "=== Validating upgraded harness at {{target_path}} ==="
+
+          # YAML parse check
+          if [ -f "{{target_path}}/config.yaml" ]; then
+            python3 -c "import yaml; yaml.safe_load(open('{{target_path}}/config.yaml'))" \
+              && echo "PASS: config.yaml is valid YAML" \
+              || echo "FAIL: config.yaml parse error"
+          else
+            echo "WARN: config.yaml not found at {{target_path}}"
+          fi
+
+          # Python syntax check
+          if [ -f "{{target_path}}/constraints.py" ]; then
+            python3 -m py_compile "{{target_path}}/constraints.py" \
+              && echo "PASS: constraints.py syntax is valid" \
+              || echo "FAIL: constraints.py syntax error"
+          else
+            echo "INFO: constraints.py not found (may not be required for this tier)"
+          fi
+
+      - name: report
+        description: Confirm upgrade success with a final version check
+        agent: harness-machine:upgrade-checker
+        instruction: |
+          Run a final version check on the upgraded harness at: {{target_path}}
+
+          Confirm that the harness is now up-to-date with the current
+          harness-machine version. Report any remaining issues or warnings.
