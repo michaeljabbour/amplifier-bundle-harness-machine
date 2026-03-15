@@ -75,6 +75,7 @@ class TestBundleMd:
 
     def test_agents_include_contains_all_nine_agents(self):
         fm = _parse_frontmatter(_read_file("bundle.md"))
+        # strip namespace prefix: "harness-machine:agent-name" → "agent-name"
         agent_names = [entry.split(":")[-1] for entry in fm["agents"]["include"]]
         for name in [
             "environment-analyst",
@@ -180,7 +181,7 @@ class TestBehaviorYaml:
 # Mode file tests
 # ---------------------------------------------------------------------------
 
-ALL_MODES = [
+ALL_MODES = [  # 7 modes
     "harness-explore",
     "harness-spec",
     "harness-plan",
@@ -249,7 +250,7 @@ class TestModes:
 # Agent file tests
 # ---------------------------------------------------------------------------
 
-ALL_AGENTS = [
+ALL_AGENTS = [  # 9 agents
     "environment-analyst",
     "mission-architect",
     "capability-advisor",
