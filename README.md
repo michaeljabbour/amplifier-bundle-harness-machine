@@ -95,6 +95,22 @@ Harness artifacts are delivered in three tiers based on scope:
 | `/harness-finish` | Package and deliver: nano-amplifier, bundle, or factory | Session complete |
 | `/harness-debug` | Diagnose constraint failures, convergence plateaus, search errors | `/harness-verify` |
 
+## Decision Architecture: Pico vs Nano vs Micro
+
+The three tiers represent fundamentally different decision-making architectures:
+
+| Tier | Decision Model | Key Capability | Lines |
+|---|---|---|---|
+| **Pico** | Single-loop reactor | Constraint enforcement + basic tools | 800-1,500 |
+| **Nano** | Multi-source reasoner with memory | + streaming, sessions, dynamic context, multi-provider | 2,000-3,500 |
+| **Micro** | Orchestrating multi-agent system | + modes, recipes, delegation, approval gates, intent detection | 5,000-8,000 |
+
+**The progression: reactive (pico) → aware (nano) → orchestrating (micro).**
+
+Each tier adds a new dimension of agency, not just more tools. The constraint engine (the safety layer) remains identical across all tiers.
+
+For the full comparison with decision flowcharts, capability matrices, and real-world examples, see **[Decision Architecture Guide](docs/DECISION-ARCHITECTURE.md)**.
+
 ## Available Agents
 
 | Agent | Purpose |
