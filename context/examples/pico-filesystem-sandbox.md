@@ -1,4 +1,5 @@
-# Example: Nano Filesystem Harness
+# Example: Pico Filesystem Sandbox
+**Tier:** Pico
 **Scale:** Trivial (nano) — Constrain an agent to read/write within a single directory.
 **Walkthrough:** Spec → Plan → Artifact, annotated with WHY each decision was made.
 

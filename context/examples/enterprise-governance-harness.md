@@ -1,4 +1,5 @@
 # Example: Enterprise Governance Harness
+**Tier:** Micro (factory-scale)
 **Scale:** Complex (factory) — NemoClaw-style multi-layer constraints with governance and audit.
 **Walkthrough:** Spec → Plan → Artifact (Tier 3 machine), annotated with WHY each decision was made.
 
