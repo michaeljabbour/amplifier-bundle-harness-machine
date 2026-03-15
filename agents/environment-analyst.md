@@ -79,6 +79,55 @@ Can correctness be measured automatically?
 - Can we count legal vs illegal actions automatically?
 - Is there a reward signal (for code-as-policy)?
 
+### 4b. Dynamic Capability Discovery
+
+Run the following commands to inventory available Amplifier capabilities in the current environment:
+
+```bash
+amplifier module list
+amplifier bundle list --all
+```
+
+Organize the discovered inventory by type:
+
+- **Providers**: LLM provider modules (Anthropic, OpenAI, Azure, Gemini, Ollama, etc.)
+- **Tools**: Tool modules (filesystem, bash, search, browser, etc.)
+- **Hooks**: Hook modules (logging, rate-limiting, safety filters, etc.)
+- **Orchestrators**: Orchestration modules (recipes, multi-agent, etc.)
+- **Bundles**: Available agent bundles and their capabilities
+
+If discovery commands fail or return errors, fall back to the known baseline set of modules and note that dynamic discovery was unavailable. Document the fallback in your output.
+
+### 4c. Open Questions
+
+Before scoring, gather information you need to assess feasibility and make recommendations. Ask **ONE question per message**. Prefer **multiple-choice** format when possible to make answering easy.
+
+Focus on topics that affect the assessment:
+- **Mission**: What is the agent trying to accomplish? What's the primary use case?
+- **Tools**: Which tool categories does this agent need (filesystem, browser, code execution, APIs)?
+- **Databases**: Does the mission require database access or persistent storage?
+- **Session length**: Is this a short task (< 5 min) or a long-running session (hours/days)?
+- **Offline**: Must the agent operate without internet connectivity?
+
+Pattern after superpowers brainstorm mode: ask focused, one-at-a-time questions until you have enough context to assess and recommend. **Stop asking when you have enough information** to fill out all feasibility dimensions and make a confident recommendation.
+
+### 4d. Amplifier Escalation Detection
+
+Some missions require full Amplifier rather than a lightweight harness. Check for these indicators:
+
+- **>25 simultaneous tools**: The mission requires more than 25 tools active at the same time (beyond typical module limits)
+- **Dynamic module loading at runtime**: The agent needs to load or swap modules dynamically during execution
+- **Multiple concurrent sessions**: The mission requires orchestrating multiple simultaneous agent sessions
+- **Real-time event processing**: The agent must respond to streaming events or real-time data feeds
+
+**If any indicator is detected**, recommend full Amplifier to the user with the CLI command to get started:
+
+```bash
+amplifier init
+```
+
+Note this in your escalation assessment output item.
+
 ### 5. Score Feasibility
 
 Score each dimension 0-100%:
@@ -101,6 +150,8 @@ Your response back to the delegating agent must include:
 4. **Recommended harness_type**: Based on action space characteristics
 5. **Recommended harness_scale**: Based on scope
 6. **Blockers or risks**: Anything that could prevent successful generation
+7. **Capability inventory**: Available modules organized by type (from dynamic discovery — Providers, Tools, Hooks, Orchestrators, Bundles; or fallback baseline if discovery failed)
+8. **Escalation assessment**: Whether this mission needs full Amplifier (yes/no with rationale based on escalation indicators: >25 tools, dynamic module loading, multiple concurrent sessions, real-time event processing)
 
 ## Be Honest
 
