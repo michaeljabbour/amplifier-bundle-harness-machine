@@ -68,12 +68,12 @@ class TestBundleMd:
         assert "version" in fm["bundle"]
         assert fm["bundle"]["version"]
 
-    def test_agents_include_has_nine_entries(self):
+    def test_agents_include_has_eleven_entries(self):
         fm = _parse_frontmatter(_read_file("bundle.md"))
         agents = fm["agents"]["include"]
-        assert len(agents) == 9
+        assert len(agents) == 11
 
-    def test_agents_include_contains_all_nine_agents(self):
+    def test_agents_include_contains_all_eleven_agents(self):
         fm = _parse_frontmatter(_read_file("bundle.md"))
         # strip namespace prefix: "harness-machine:agent-name" → "agent-name"
         agent_names = [entry.split(":")[-1] for entry in fm["agents"]["include"]]
@@ -87,6 +87,8 @@ class TestBundleMd:
             "harness-critic",
             "harness-refiner",
             "harness-evaluator",
+            "upgrade-checker",
+            "upgrade-planner",
         ]:
             assert name in agent_names, f"Agent {name!r} not found in agents.include"
 
@@ -166,10 +168,10 @@ class TestBehaviorYaml:
         tool_modules = [t["module"] for t in tools]
         assert "tool-skills" in tool_modules
 
-    def test_agents_include_has_nine_entries(self):
+    def test_agents_include_has_eleven_entries(self):
         data = yaml.safe_load(_read_file("behaviors/harness-machine.yaml"))
         agents = data["agents"]["include"]
-        assert len(agents) == 9
+        assert len(agents) == 11
 
     def test_context_include_has_entries(self):
         data = yaml.safe_load(_read_file("behaviors/harness-machine.yaml"))
@@ -181,7 +183,7 @@ class TestBehaviorYaml:
 # Mode file tests
 # ---------------------------------------------------------------------------
 
-ALL_MODES = [  # 7 modes
+ALL_MODES = [  # 8 modes
     "harness-explore",
     "harness-spec",
     "harness-plan",
@@ -189,6 +191,7 @@ ALL_MODES = [  # 7 modes
     "harness-verify",
     "harness-finish",
     "harness-debug",
+    "harness-upgrade",
 ]
 
 FINISH_MODE = "harness-finish"
@@ -250,7 +253,7 @@ class TestModes:
 # Agent file tests
 # ---------------------------------------------------------------------------
 
-ALL_AGENTS = [  # 9 agents
+ALL_AGENTS = [  # 11 agents
     "environment-analyst",
     "mission-architect",
     "capability-advisor",
@@ -260,6 +263,8 @@ ALL_AGENTS = [  # 9 agents
     "harness-critic",
     "harness-refiner",
     "harness-evaluator",
+    "upgrade-checker",
+    "upgrade-planner",
 ]
 
 
@@ -295,11 +300,13 @@ class TestAgents:
 # Recipe file tests
 # ---------------------------------------------------------------------------
 
-ALL_RECIPES = [
+ALL_RECIPES = [  # 6 recipes
     "harness-single-iteration",
     "harness-refinement-loop",
     "harness-development-cycle",
     "harness-factory-generation",
+    "check-upgrade",
+    "execute-upgrade",
 ]
 
 

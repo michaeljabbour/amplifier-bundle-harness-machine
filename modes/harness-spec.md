@@ -62,6 +62,7 @@ Before any design work, confirm the tier and name selections from `/harness-expl
 - Ask: "What should we name this mini-amplifier?"
 - Ask: "Which tools should it have access to?"
 - Ask: "Are there any bash constraints (restricted commands)?"
+- Ask: "How will this mini-amplifier run? (standalone / in-app / hybrid)"
 
 ### Phase 1: Choose Harness Type
 
@@ -109,7 +110,7 @@ When all sections are validated:
 ```
 delegate(
   agent="harness-machine:spec-writer",
-  instruction="Write the harness specification for: [name]. Save to docs/plans/YYYY-MM-DD-<name>-harness-spec.md. Include all validated sections: tier=[pico|nano|micro], mission=[mission statement], name=[proposed name], harness_type=[type], harness_scale=[scale], capabilities=[tool list], bash_constraints=[constraint rules], constraints=[list], acceptance_criteria=[criteria], environment=[description]. Here is the complete validated specification: [all sections]",
+  instruction="Write the harness specification for: [name]. Save to docs/plans/YYYY-MM-DD-<name>-harness-spec.md. Include all validated sections: tier=[pico|nano|micro], mission=[mission statement], name=[proposed name], harness_type=[type], harness_scale=[scale], capabilities=[tool list], bash_constraints=[constraint rules], constraints=[list], acceptance_criteria=[criteria], environment=[description], deployment_mode=[standalone|in-app|hybrid]. Here is the complete validated specification: [all sections]",
   context_depth="recent",
   context_scope="conversation"
 )

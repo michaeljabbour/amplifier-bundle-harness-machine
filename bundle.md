@@ -5,7 +5,7 @@ bundle:
   description: |
     Mini-amplifier factory for LLM constraint harness generation.
     Based on the AutoHarness paper (Lou et al., Google DeepMind, 2026).
-    Provides 9 agents, 7 modes, 4 recipes, and 3 skills supporting three size
+    Provides 11 agents, 8 modes, 6 recipes, and 3 skills supporting three size
     tiers (pico/nano/micro) with dynamic capability discovery, mission-based
     naming, and three runtime scaffolds.
 
@@ -24,6 +24,8 @@ agents:
     - harness-machine:harness-critic
     - harness-machine:harness-refiner
     - harness-machine:harness-evaluator
+    - harness-machine:upgrade-checker
+    - harness-machine:upgrade-planner
 ---
 
 # Harness Machine
@@ -32,7 +34,7 @@ Generate constraint harnesses for LLM agents — from tiny nano-amplifiers to en
 
 This bundle is a mini-amplifier factory. It generates pico (≤300 lines), nano (≤600 lines), and micro (≤1200 lines) constraint harnesses with mission-based naming and dynamic capability discovery, each packaged as a ready-to-deploy runtime scaffold.
 
-It provides nine agents and seven modes that guide you through constraint harness generation:
+It provides eleven agents and eight modes that guide you through constraint harness generation:
 
 1. **`/harness-explore`** — Understand the target environment, map the action space, assess feasibility
 2. **`/harness-spec`** — Design the harness: type, scale, constraints, acceptance criteria
@@ -64,6 +66,7 @@ Both tracks produce the same artifact: a constraint harness packaged as a nano-a
 | `/harness-verify` | Collect evidence that harness works | `/harness-finish` or `/harness-debug` |
 | `/harness-finish` | Package and deliver the result | Session complete |
 | `/harness-debug` | Diagnose constraint or convergence failures | `/harness-verify` |
+| `/harness-upgrade` | Check and apply upgrades to existing harnesses | `/harness-verify` |
 
 ## Available Agents
 
@@ -78,6 +81,8 @@ Both tracks produce the same artifact: a constraint harness packaged as a nano-a
 | `harness-machine:harness-critic` | Reviews harness for coverage gaps and over-constraints |
 | `harness-machine:harness-refiner` | Improves harness from critic feedback |
 | `harness-machine:harness-evaluator` | Independent measurement of legal action rate and reward |
+| `harness-machine:upgrade-checker` | Inspects existing harnesses for version drift and upgrade opportunities |
+| `harness-machine:upgrade-planner` | Plans and executes upgrade migrations for existing harnesses |
 
 ## Available Recipes
 
@@ -87,6 +92,8 @@ Both tracks produce the same artifact: a constraint harness packaged as a nano-a
 | `harness-machine:recipes/harness-refinement-loop.yaml` | Convergence loop with Thompson sampling |
 | `harness-machine:recipes/harness-single-iteration.yaml` | One generate/critique/refine/evaluate cycle |
 | `harness-machine:recipes/harness-factory-generation.yaml` | Batch generation across environments |
+| `harness-machine:recipes/check-upgrade.yaml` | Check existing harness for version drift and upgrade opportunities |
+| `harness-machine:recipes/execute-upgrade.yaml` | Plan and execute upgrade migration for existing harness |
 
 ## Skills Library
 

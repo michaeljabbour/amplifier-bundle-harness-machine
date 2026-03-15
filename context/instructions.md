@@ -14,6 +14,7 @@ Check whether the user's intent maps to a mode. If it does, suggest the mode bef
 | "Test it" / "does it work" / "measure the legal action rate" | `/harness-verify` |
 | "Ship it" / "package it" / "we're done" / "create the PR" | `/harness-finish` |
 | "It's not working" / "constraints are wrong" / "not converging" | `/harness-debug` |
+| "Upgrade this harness" / "check for updates" / "migrate to new version" / "is it outdated" | `/harness-upgrade` |
 
 If no mode fits, work normally. Modes are tools, not cages.
 

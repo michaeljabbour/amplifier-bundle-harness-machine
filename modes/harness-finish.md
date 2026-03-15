@@ -114,11 +114,31 @@ If yes, create `docker/` directory and stamp templates:
 - Copy `runtime/Dockerfile.template` → `docker/Dockerfile` (substitute `{{harness_name}}`)
 - Copy `runtime/docker-compose.template.yaml` → `docker/docker-compose.yaml` (substitute `{{harness_name}}` and `{{project_root}}`)
 
+**Version stamping**
+
+Read `generated_by` and `generated_version` from `@harness-machine:context/version.md` and write them into `config.yaml`:
+
+```yaml
+generated_by: harness-machine
+generated_version: <version from context/version.md>
+```
+
+**Deployment mode entry point selection**
+
+Based on the `deployment_mode` from the spec:
+
+| deployment_mode | Primary entry point | Notes |
+|----------------|---------------------|-------|
+| `standalone` | `cli.py` | Interactive CLI with rich rendering |
+| `in-app` | `api.py` | Embeddable API, no CLI imports |
+| `hybrid` | `service.py` | Event-driven with graceful shutdown |
+| (full flexibility) | `cli.py`, `api.py`, `service.py` | Include all three |
+
 **Verification for all studs**
 
 - Validate `behavior.yaml` parses as YAML
 - Run `python_check` on `constraints.py`
-- Ensure `config.yaml` has required keys: `project_root`, `model`, `harness_type`, `max_retries`
+- Ensure `config.yaml` has required keys: `project_root`, `model`, `harness_type`, `max_retries`, `generated_by`, `generated_version`
 - Ensure `system-prompt.md` contains agent instructions
 
 **Tier 2 — Harness bundle:**

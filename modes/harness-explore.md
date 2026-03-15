@@ -45,6 +45,7 @@ When entering harness-explore mode, create this todo checklist immediately:
 - [ ] Delegate to environment-analyst for systematic investigation with dynamic discovery
 - [ ] Delegate to mission-architect for meaningful naming
 - [ ] Delegate to capability-advisor for tier, tools, and provider recommendation
+- [ ] Ask about deployment mode (standalone/embedded/service)
 - [ ] Present unified summary: feasibility, proposed name, recommended tier, capability picker, blockers
 - [ ] Transition to /harness-spec
 
@@ -120,6 +121,7 @@ When all three delegations return, present a unified summary to the user:
 - **Proposed name:** The mission-architect's recommended name (e.g., `nano-amplifier-chess-guardian`)
 - **Recommended tier:** pico / nano / micro with rationale
 - **Capability picker:** Let the user confirm or adjust the tool set and provider selections
+- **Deployment mode:** How will this mini-amplifier run? standalone / embedded / service
 - **Blockers:** Any risks or ambiguities that need resolution
 
 **User reviews picker and approves name:**

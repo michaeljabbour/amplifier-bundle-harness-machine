@@ -3,7 +3,7 @@ bundle:
   version: 0.2.0
   description: |
     Mounts the modes system and registers agents for mini-amplifier factory workflows.
-    Provides 7 modes, 9 agents, and 3 skills for constraint harness development
+    Provides 8 modes, 11 agents, and 3 skills for constraint harness development
     across pico/nano/micro tiers.
 
 includes:
@@ -38,6 +38,8 @@ agents:
     - harness-machine:harness-critic
     - harness-machine:harness-refiner
     - harness-machine:harness-evaluator
+    - harness-machine:upgrade-checker
+    - harness-machine:upgrade-planner
 
 context:
   include:

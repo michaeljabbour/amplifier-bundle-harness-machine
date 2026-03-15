@@ -167,14 +167,14 @@ class TestAllModeFrontmatterValid:
 
 
 class TestHarnessExploreUpdated:
-    """harness-explore.md must have 7-item checklist and 3 agent delegations."""
+    """harness-explore.md must have 8-item checklist and 3 agent delegations."""
 
-    def test_todo_checklist_has_7_items(self):
+    def test_todo_checklist_has_8_items(self):
         body = _get_body("modes/harness-explore.md")
         # Find the todo checklist section
         checklist_items = re.findall(r"^- \[ \]", body, re.MULTILINE)
-        assert len(checklist_items) == 7, (
-            f"Todo checklist must have exactly 7 items, found {len(checklist_items)}"
+        assert len(checklist_items) == 8, (
+            f"Todo checklist must have exactly 8 items, found {len(checklist_items)}"
         )
 
     def test_checklist_mentions_build_mission(self):
