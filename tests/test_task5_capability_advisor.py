@@ -42,6 +42,11 @@ def _parse_frontmatter(content):
     return yaml.safe_load(parts[1])
 
 
+def _get_frontmatter(rel_path="agents/capability-advisor.md"):
+    """Return parsed YAML frontmatter of a file."""
+    return _parse_frontmatter(_read_file(rel_path))
+
+
 def _get_body(rel_path="agents/capability-advisor.md"):
     """Return the markdown body (after frontmatter) of a file."""
     return _read_file(rel_path).split("---", 2)[2]
@@ -66,35 +71,34 @@ class TestCapabilityAdvisorAgent:
     # ------------------------------------------------------------------
 
     def test_frontmatter_parses(self):
-        content = _read_file("agents/capability-advisor.md")
-        fm = _parse_frontmatter(content)
+        fm = _get_frontmatter()
         assert fm is not None
         assert isinstance(fm, dict)
 
     def test_meta_name_is_capability_advisor(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         assert fm["meta"]["name"] == "capability-advisor"
 
     def test_meta_description_is_non_empty_string(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         desc = fm["meta"]["description"]
         assert isinstance(desc, str)
         assert len(desc.strip()) > 0
 
     def test_meta_description_has_two_examples(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         desc = fm["meta"]["description"]
         assert desc.count("<example>") >= 2, "Description must have at least 2 examples"
 
     def test_meta_description_mentions_genomics(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         desc = fm["meta"]["description"]
         assert "genomics" in desc.lower(), (
             "Description must mention genomics specialist tools example"
         )
 
     def test_meta_description_mentions_k8s_tier_assessment(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         desc = fm["meta"]["description"]
         assert "k8s" in desc.lower() or "kubernetes" in desc.lower(), (
             "Description must mention k8s tier assessment example"
@@ -105,13 +109,13 @@ class TestCapabilityAdvisorAgent:
     # ------------------------------------------------------------------
 
     def test_model_role_includes_reasoning(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         model_role = fm["meta"]["model_role"]
         assert isinstance(model_role, list), "model_role must be a list"
         assert "reasoning" in model_role, "model_role must include 'reasoning'"
 
     def test_model_role_includes_general(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         model_role = fm["meta"]["model_role"]
         assert "general" in model_role, "model_role must include 'general'"
 
@@ -120,28 +124,28 @@ class TestCapabilityAdvisorAgent:
     # ------------------------------------------------------------------
 
     def test_has_exactly_three_tools(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         tools = fm["tools"]
         assert isinstance(tools, list), "tools must be a list"
         assert len(tools) == 3, f"Expected 3 tools, got {len(tools)}"
 
     def test_tools_include_tool_filesystem(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         tool_modules = [t["module"] for t in fm["tools"]]
         assert "tool-filesystem" in tool_modules
 
     def test_tools_include_tool_search(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         tool_modules = [t["module"] for t in fm["tools"]]
         assert "tool-search" in tool_modules
 
     def test_tools_include_tool_bash(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         tool_modules = [t["module"] for t in fm["tools"]]
         assert "tool-bash" in tool_modules
 
     def test_tools_have_git_sources(self):
-        fm = _parse_frontmatter(_read_file("agents/capability-advisor.md"))
+        fm = _get_frontmatter()
         for tool in fm["tools"]:
             assert "source" in tool, f"Tool {tool.get('module')} missing source"
             assert tool["source"].startswith("git+https://"), (
@@ -154,7 +158,7 @@ class TestCapabilityAdvisorAgent:
 
     def test_body_has_dynamic_discovery_section(self):
         body = _get_body()
-        assert "dynamic discovery" in body.lower() or "Dynamic Discovery" in body, (
+        assert "dynamic discovery" in body.lower(), (
             "Body must have Dynamic Discovery section"
         )
 
@@ -173,11 +177,11 @@ class TestCapabilityAdvisorAgent:
     def test_body_discovery_organizes_by_type(self):
         body = _get_body()
         # Must mention at least: Providers, Tools, Hooks, Orchestrators, Bundles
-        assert "providers" in body.lower() or "Providers" in body
-        assert "tools" in body.lower() or "Tools" in body
-        assert "hooks" in body.lower() or "Hooks" in body
-        assert "orchestrators" in body.lower() or "Orchestrators" in body
-        assert "bundles" in body.lower() or "Bundles" in body
+        assert "providers" in body.lower()
+        assert "tools" in body.lower()
+        assert "hooks" in body.lower()
+        assert "orchestrators" in body.lower()
+        assert "bundles" in body.lower()
 
     def test_body_discovery_has_fallback(self):
         body = _get_body()
