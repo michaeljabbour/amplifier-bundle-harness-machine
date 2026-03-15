@@ -2,8 +2,9 @@ bundle:
   name: harness-machine-behavior
   version: 0.1.0
   description: |
-    Mounts the modes system and registers agents for harness generation workflows.
-    Provides 7 modes, 7 agents, and 3 skills for constraint harness development.
+    Mounts the modes system and registers agents for mini-amplifier factory workflows.
+    Provides 7 modes, 9 agents, and 3 skills for constraint harness development
+    across pico/nano/micro tiers.
 
 includes:
   - bundle: git+https://github.com/microsoft/amplifier-bundle-modes@main#subdirectory=behaviors/modes.yaml
@@ -29,6 +30,8 @@ tools:
 agents:
   include:
     - harness-machine:environment-analyst
+    - harness-machine:mission-architect
+    - harness-machine:capability-advisor
     - harness-machine:spec-writer
     - harness-machine:plan-writer
     - harness-machine:harness-generator

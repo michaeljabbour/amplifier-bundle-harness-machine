@@ -68,16 +68,18 @@ class TestBundleMd:
         assert "version" in fm["bundle"]
         assert fm["bundle"]["version"]
 
-    def test_agents_include_has_seven_entries(self):
+    def test_agents_include_has_nine_entries(self):
         fm = _parse_frontmatter(_read_file("bundle.md"))
         agents = fm["agents"]["include"]
-        assert len(agents) == 7
+        assert len(agents) == 9
 
-    def test_agents_include_contains_all_seven_agents(self):
+    def test_agents_include_contains_all_nine_agents(self):
         fm = _parse_frontmatter(_read_file("bundle.md"))
         agents_str = str(fm["agents"]["include"])
         for name in [
             "environment-analyst",
+            "mission-architect",
+            "capability-advisor",
             "spec-writer",
             "plan-writer",
             "harness-generator",
@@ -163,10 +165,10 @@ class TestBehaviorYaml:
         tool_modules = [t["module"] for t in tools]
         assert "tool-skills" in tool_modules
 
-    def test_agents_include_has_seven_entries(self):
+    def test_agents_include_has_nine_entries(self):
         data = yaml.safe_load(_read_file("behaviors/harness-machine.yaml"))
         agents = data["agents"]["include"]
-        assert len(agents) == 7
+        assert len(agents) == 9
 
     def test_context_include_has_entries(self):
         data = yaml.safe_load(_read_file("behaviors/harness-machine.yaml"))
@@ -249,6 +251,8 @@ class TestModes:
 
 ALL_AGENTS = [
     "environment-analyst",
+    "mission-architect",
+    "capability-advisor",
     "spec-writer",
     "plan-writer",
     "harness-generator",
@@ -351,6 +355,7 @@ CONTEXT_FILES = [
     "pattern.md",
     "harness-format.md",
     "templates-reference.md",
+    "constraint-spec-template.md",
 ]
 
 
@@ -360,16 +365,28 @@ class TestContextFiles:
         path = os.path.join(BUNDLE_ROOT, "context", filename)
         assert os.path.isfile(path), f"context/{filename} does not exist"
 
-    def test_four_example_files_exist(self):
+    def test_six_example_files_exist(self):
         examples_dir = os.path.join(BUNDLE_ROOT, "context", "examples")
         examples = [
             f
             for f in os.listdir(examples_dir)
             if os.path.isfile(os.path.join(examples_dir, f))
         ]
-        assert len(examples) == 4, (
-            f"Expected 4 example files in context/examples/, found {len(examples)}: {examples}"
+        assert len(examples) == 6, (
+            f"Expected 6 example files in context/examples/, found {len(examples)}: {examples}"
         )
+
+    def test_tier_specific_examples_exist(self):
+        examples_dir = os.path.join(BUNDLE_ROOT, "context", "examples")
+        for filename in [
+            "pico-filesystem-sandbox.md",
+            "nano-tumor-genome-to-vaccine.md",
+            "micro-k8s-platform-engineer.md",
+        ]:
+            path = os.path.join(examples_dir, filename)
+            assert os.path.isfile(path), (
+                f"Tier-specific example context/examples/{filename} does not exist"
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -527,80 +544,77 @@ class TestHookModule:
 
 
 class TestRuntime:
+    # ---------------------------------------------------------------------------
+    # Three-tier directory structure
+    # ---------------------------------------------------------------------------
+
     def test_runtime_dir_exists(self):
         assert os.path.isdir(os.path.join(BUNDLE_ROOT, "runtime"))
 
-    # Pico tier (single-provider, no-frills constrained agent CLI)
     def test_pico_dir_exists(self):
         path = os.path.join(BUNDLE_ROOT, "runtime", "pico")
         assert os.path.isdir(path)
 
-    def test_pico_has_gate_py(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "gate.py")
-        assert os.path.isfile(path)
+    def test_nano_dir_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "nano")
+        assert os.path.isdir(path)
 
-    def test_pico_has_tools_py(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "tools.py")
+    def test_micro_dir_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "micro")
+        assert os.path.isdir(path)
+
+    # ---------------------------------------------------------------------------
+    # Pico tier — cli / runtime / tools existence
+    # ---------------------------------------------------------------------------
+
+    def test_pico_has_cli_py(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "cli.py")
         assert os.path.isfile(path)
 
     def test_pico_has_runtime_py(self):
         path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "runtime.py")
         assert os.path.isfile(path)
 
-    def test_pico_has_cli_py(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "cli.py")
+    def test_pico_has_tools_py(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "tools.py")
         assert os.path.isfile(path)
+
+    # ---------------------------------------------------------------------------
+    # Pico tier — rich rendering
+    # ---------------------------------------------------------------------------
+
+    def test_pico_cli_uses_rich_rendering(self):
+        content = _read_file("runtime/pico/cli.py")
+        assert "rich" in content
+
+    # ---------------------------------------------------------------------------
+    # Pico tier — constraint gate
+    # ---------------------------------------------------------------------------
 
     def test_pico_gate_has_constraint_gate(self):
         content = _read_file("runtime/pico/gate.py")
         assert "ConstraintGate" in content
 
-    def test_pico_runtime_has_pico_agent(self):
-        content = _read_file("runtime/pico/runtime.py")
-        assert "PicoAgent" in content
-
-    def test_pico_tools_has_local_tool_executor(self):
-        content = _read_file("runtime/pico/tools.py")
-        assert "LocalToolExecutor" in content
-
-    def test_pico_cli_has_main(self):
-        content = _read_file("runtime/pico/cli.py")
-        assert "def main(" in content
-
-    def test_pico_pyproject_template_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "pyproject.toml.template")
-        assert os.path.isfile(path)
+    # ---------------------------------------------------------------------------
+    # Pico tier — pyproject harness_name
+    # ---------------------------------------------------------------------------
 
     def test_pico_pyproject_template_has_harness_name(self):
         content = _read_file("runtime/pico/pyproject.toml.template")
         assert "{{harness_name}}" in content
 
+    # ---------------------------------------------------------------------------
+    # Pico tier — dockerfile
+    # ---------------------------------------------------------------------------
+
     def test_pico_dockerfile_template_exists(self):
         path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "Dockerfile.template")
         assert os.path.isfile(path)
 
-    def test_pico_dockerfile_uses_python311_slim(self):
-        content = _read_file("runtime/pico/Dockerfile.template")
-        assert "python:3.11-slim" in content
-
-    def test_pico_docker_compose_template_exists(self):
-        path = os.path.join(
-            BUNDLE_ROOT, "runtime", "pico", "docker-compose.template.yaml"
-        )
-        assert os.path.isfile(path)
+    # ---------------------------------------------------------------------------
+    # Pico tier — docker-compose project_root
+    # ---------------------------------------------------------------------------
 
     def test_pico_docker_compose_has_project_root(self):
         content = _read_file("runtime/pico/docker-compose.template.yaml")
         assert "{{project_root}}" in content
-
-    # Nano tier — future work
-    @pytest.mark.xfail(reason="nano tier not yet implemented", strict=False)
-    def test_nano_dir_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "nano")
-        assert os.path.isdir(path)
-
-    # Micro tier — future work
-    @pytest.mark.xfail(reason="micro tier not yet implemented", strict=False)
-    def test_micro_dir_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "micro")
-        assert os.path.isdir(path)

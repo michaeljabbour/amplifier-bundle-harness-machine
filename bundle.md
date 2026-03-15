@@ -3,10 +3,11 @@ bundle:
   name: harness-machine
   version: 0.1.0
   description: |
-    Interactive and autonomous constraint harness generation for LLM agents.
+    Mini-amplifier factory for LLM constraint harness generation.
     Based on the AutoHarness paper (Lou et al., Google DeepMind, 2026).
-    Provides 7 agents, 7 modes, 4 recipes, and 3 skills for generating
-    constraint harnesses from nano-amplifiers to enterprise governance systems.
+    Provides 9 agents, 7 modes, 4 recipes, and 3 skills supporting three size
+    tiers (pico/nano/micro) with dynamic capability discovery, mission-based
+    naming, and three runtime scaffolds.
 
 includes:
   - bundle: git+https://github.com/microsoft/amplifier-foundation@main
@@ -15,6 +16,8 @@ includes:
 agents:
   include:
     - harness-machine:environment-analyst
+    - harness-machine:mission-architect
+    - harness-machine:capability-advisor
     - harness-machine:spec-writer
     - harness-machine:plan-writer
     - harness-machine:harness-generator
@@ -27,7 +30,9 @@ agents:
 
 Generate constraint harnesses for LLM agents — from tiny nano-amplifiers to enterprise-scale governance systems.
 
-This bundle provides seven modes that guide you through constraint harness generation:
+This bundle is a mini-amplifier factory. It generates pico (≤300 lines), nano (≤600 lines), and micro (≤1200 lines) constraint harnesses with mission-based naming and dynamic capability discovery, each packaged as a ready-to-deploy runtime scaffold.
+
+It provides nine agents and seven modes that guide you through constraint harness generation:
 
 1. **`/harness-explore`** — Understand the target environment, map the action space, assess feasibility
 2. **`/harness-spec`** — Design the harness: type, scale, constraints, acceptance criteria
@@ -64,8 +69,10 @@ Both tracks produce the same artifact: a constraint harness packaged as a nano-a
 
 | Agent | Purpose |
 |-------|---------|
-| `harness-machine:environment-analyst` | Explores target environment, maps action space, assesses feasibility |
-| `harness-machine:spec-writer` | Produces harness specification from exploration results |
+| `harness-machine:environment-analyst` | Explores target environment, maps action space, assesses feasibility; runs dynamic capability discovery |
+| `harness-machine:mission-architect` | Creates meaningful name, domain-specific system prompt, README, context docs |
+| `harness-machine:capability-advisor` | Recommends tier, tools, provider; produces pre-checked capability picker |
+| `harness-machine:spec-writer` | Produces tier-aware harness specification from exploration results |
 | `harness-machine:plan-writer` | Creates implementation plan (single harness or factory) |
 | `harness-machine:harness-generator` | Generates constraint code and nano-amplifier artifacts |
 | `harness-machine:harness-critic` | Reviews harness for coverage gaps and over-constraints |
