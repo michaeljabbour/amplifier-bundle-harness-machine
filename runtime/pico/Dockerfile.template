@@ -14,10 +14,10 @@ WORKDIR /app
 # Copy harness package
 COPY standalone/ ./
 
-# Install as the non-root user
-RUN pip install --user --no-cache-dir -e .
+# Install system-wide while root (single-purpose container; no --user needed)
+RUN pip install --no-cache-dir -e .
 
-# Switch to non-root user
+# Switch to non-root user for runtime
 USER agent
 
 ENTRYPOINT ["{{harness_name}}"]

@@ -19,15 +19,6 @@ import subprocess
 from pathlib import Path
 
 
-class ConstraintViolation(Exception):
-    """Raised when a tool call is denied by the constraint gate."""
-
-    def __init__(self, tool_name: str, reason: str) -> None:
-        self.tool_name = tool_name
-        self.reason = reason
-        super().__init__(f"ConstraintViolation: {tool_name} — {reason}")
-
-
 class LocalToolExecutor:
     """Executes tools within a project_root boundary.
 
@@ -193,35 +184,11 @@ class LocalToolExecutor:
                 return f"Patch applied to {resolved}"
             raise ValueError(f"patch(1) failed: {result.stderr.strip()}")
         except FileNotFoundError:
-            pass  # patch binary not available; fall through
-
-        # Pure-Python fallback: apply a simple +/- unified diff
-        lines = patch.splitlines()
-        with open(resolved) as f:
-            original_lines = f.readlines()
-
-        output_lines = list(original_lines)
-        for line in lines:
-            if (
-                line.startswith("+++")
-                or line.startswith("---")
-                or line.startswith("@@")
-            ):
-                continue
-            if line.startswith("+"):
-                # Insert lines are handled via hunk logic; simple passthrough here
-                pass
-            elif line.startswith("-"):
-                remove = line[1:]
-                if remove + "\n" in output_lines or remove in output_lines:
-                    try:
-                        output_lines.remove(remove + "\n")
-                    except ValueError:
-                        output_lines.remove(remove)
-
-        with open(resolved, "w") as f:
-            f.writelines(output_lines)
-        return f"Patch applied (fallback) to {resolved}"
+            raise NotImplementedError(
+                "apply_patch requires the 'patch' binary which is not available on this system. "
+                "Install it via your package manager (e.g. 'apt-get install patch' or "
+                "'brew install patch') to use this tool."
+            ) from None
 
     # ------------------------------------------------------------------
     # bash

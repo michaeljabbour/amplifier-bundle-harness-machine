@@ -193,7 +193,7 @@ def cmd_chat(config: dict, system_prompt: str) -> None:
     )
 
     if _RICH_AVAILABLE:
-        console = Console()
+        console = Console()  # type: ignore[misc]
         console.print(
             f"[bold green]Pico agent ready.[/bold green] "
             f"Project: {config['project_root']}"
@@ -224,7 +224,7 @@ def cmd_chat(config: dict, system_prompt: str) -> None:
 
             if _RICH_AVAILABLE and console is not None:
                 console.print("\n[bold]Agent:[/bold]")
-                console.print(Markdown(response))
+                console.print(Markdown(response))  # type: ignore[misc]
                 console.print()
             else:
                 print(f"\nAgent: {response}\n")
