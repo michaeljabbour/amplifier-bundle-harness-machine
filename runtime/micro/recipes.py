@@ -30,7 +30,7 @@ Recipe YAML format::
 from __future__ import annotations
 
 import subprocess
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 import importlib.util
 
@@ -43,9 +43,6 @@ try:
 except ImportError:
     _RICH_AVAILABLE = False
     Console = None  # type: ignore[misc, assignment]
-
-if TYPE_CHECKING:
-    pass
 
 # ---------------------------------------------------------------------------
 # RecipeRunner

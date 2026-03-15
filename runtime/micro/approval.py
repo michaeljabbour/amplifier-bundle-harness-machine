@@ -8,7 +8,8 @@ Modes:
   - always:    Prompt for every tool call
   - dangerous: Only prompt for sensitive/destructive tool calls
 
-Sensitive tools: bash, write_file, edit_file, apply_patch
+Sensitive tools: write_file, edit_file, apply_patch (always prompt in dangerous mode)
+bash: prompted only when the command matches a destructive pattern
 Destructive patterns: rm -rf, dd, mkfs, DROP TABLE, etc.
 """
 
@@ -31,7 +32,6 @@ except ImportError:
 
 _SENSITIVE_TOOLS: frozenset[str] = frozenset(
     {
-        "bash",
         "write_file",
         "edit_file",
         "apply_patch",
@@ -132,8 +132,8 @@ class ApprovalGate:
         """Detect whether a tool call is sensitive or destructive.
 
         Checks:
-        1. Tool name is in _SENSITIVE_TOOLS
-        2. bash 'command' parameter matches a _DESTRUCTIVE_PATTERNS pattern
+        1. Tool name is in _SENSITIVE_TOOLS (write_file, edit_file, apply_patch)
+        2. For bash: 'command' parameter matches a _DESTRUCTIVE_PATTERNS pattern
 
         Args:
             tool_name: Tool name to check.
@@ -145,7 +145,7 @@ class ApprovalGate:
         if tool_name in _SENSITIVE_TOOLS:
             return True
 
-        # Extra check for bash commands with destructive patterns
+        # bash is only sensitive when the command matches a destructive pattern
         if tool_name == "bash":
             command = params.get("command", "")
             if self._matches_destructive_pattern(command):

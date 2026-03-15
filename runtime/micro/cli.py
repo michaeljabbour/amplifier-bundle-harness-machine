@@ -268,7 +268,7 @@ def cmd_chat(
 
     # Initialize micro-tier features
     mode_manager = ModeManager(config)
-    approval_gate = ApprovalGate(mode=approval_mode)
+    _approval_gate = ApprovalGate(mode=approval_mode)  # TODO: wire into process_turn()
     recipe_runner = RecipeRunner(agent=agent)
     plugin_loader = PluginLoader(plugins_dir=str(config.get("plugins_dir", "plugins")))
 
@@ -408,13 +408,11 @@ def cmd_chat(
                     print(f"Delegation error: {exc}", file=sys.stderr)
                 continue
 
-            # Check mode tool restrictions before processing
-            if not mode_manager.is_tool_allowed("bash"):
-                # In restricted mode — add note to prompt
-                pass
+            # TODO: enforce mode tool restrictions on user-initiated turns
+            # (e.g. warn or block when mode_manager.is_tool_allowed() returns False)
 
-            # Check approval gate for user-initiated actions
-            _ = approval_gate  # referenced for completeness
+            # TODO: wire approval_gate into process_turn() tool-call path
+            # so user-initiated turns also pass through the approval gate
 
             try:
                 response = asyncio.run(agent.process_turn(user_input))
