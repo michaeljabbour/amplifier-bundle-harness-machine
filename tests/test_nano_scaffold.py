@@ -1,6 +1,6 @@
 """Structural tests for the Nano Runtime Scaffold.
 
-Validates that runtime/nano/ contains exactly 14 files with the required
+Validates that runtime/nano/ contains exactly 16 files with the required
 structural patterns (imports, classes, functions, template vars).
 
 ~40 tests across 7 test classes.
@@ -34,6 +34,8 @@ PICO_FILES = [
     "tools.py",
     "runtime.py",
     "cli.py",
+    "api.py",
+    "service.py",
     "setup.sh.template",
     "pyproject.toml.template",
     "Dockerfile.template",
@@ -49,22 +51,22 @@ NANO_SPECIFIC_FILES = [
     "providers.py",
 ]
 
-ALL_FOURTEEN = PICO_FILES + NANO_SPECIFIC_FILES
+ALL_SIXTEEN = PICO_FILES + NANO_SPECIFIC_FILES
 
 
 class TestNanoFilesExist:
-    @pytest.mark.parametrize("filename", ALL_FOURTEEN)
+    @pytest.mark.parametrize("filename", ALL_SIXTEEN)
     def test_nano_file_exists(self, filename):
         path = os.path.join(NANO_DIR, filename)
         assert os.path.isfile(path), f"Missing: runtime/nano/{filename}"
 
-    def test_nano_dir_has_exactly_fourteen_files(self):
-        """runtime/nano/ must contain exactly 14 files."""
+    def test_nano_dir_has_exactly_sixteen_files(self):
+        """runtime/nano/ must contain exactly 16 files."""
         files = [
             f for f in os.listdir(NANO_DIR) if os.path.isfile(os.path.join(NANO_DIR, f))
         ]
-        assert sorted(files) == sorted(ALL_FOURTEEN), (
-            f"Expected {sorted(ALL_FOURTEEN)}, got {sorted(files)}"
+        assert sorted(files) == sorted(ALL_SIXTEEN), (
+            f"Expected {sorted(ALL_SIXTEEN)}, got {sorted(files)}"
         )
 
 
