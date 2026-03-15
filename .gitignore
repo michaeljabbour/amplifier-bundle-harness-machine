@@ -9,3 +9,4 @@ docs/autoharness-amplifier-analysis.md
 __pycache__/
 *.pyc
 .pytest_cache/
+~/
