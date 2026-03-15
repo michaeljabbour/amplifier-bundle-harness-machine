@@ -124,7 +124,9 @@ class TestBundleMd:
 
 class TestBehaviorYaml:
     def test_behavior_file_exists(self):
-        assert os.path.isfile(os.path.join(BUNDLE_ROOT, "behaviors", "harness-machine.yaml"))
+        assert os.path.isfile(
+            os.path.join(BUNDLE_ROOT, "behaviors", "harness-machine.yaml")
+        )
 
     def test_behavior_yaml_parses(self):
         content = _read_file("behaviors/harness-machine.yaml")
@@ -232,9 +234,7 @@ class TestModes:
         fm = read_frontmatter(path)
         assert fm["mode"]["allow_clear"] is True
 
-    @pytest.mark.parametrize(
-        "mode_name", [m for m in ALL_MODES if m != FINISH_MODE]
-    )
+    @pytest.mark.parametrize("mode_name", [m for m in ALL_MODES if m != FINISH_MODE])
     def test_non_finish_modes_allow_clear_false(self, mode_name):
         path = os.path.join(BUNDLE_ROOT, "modes", f"{mode_name}.md")
         fm = read_frontmatter(path)
@@ -302,14 +302,18 @@ class TestRecipes:
     @pytest.mark.parametrize("recipe_name", ALL_RECIPES)
     def test_recipe_file_exists(self, recipe_name):
         path = os.path.join(BUNDLE_ROOT, "recipes", f"{recipe_name}.yaml")
-        assert os.path.isfile(path), f"Recipe file recipes/{recipe_name}.yaml does not exist"
+        assert os.path.isfile(path), (
+            f"Recipe file recipes/{recipe_name}.yaml does not exist"
+        )
 
     @pytest.mark.parametrize("recipe_name", ALL_RECIPES)
     def test_recipe_parses_as_valid_yaml_dict(self, recipe_name):
         path = os.path.join(BUNDLE_ROOT, "recipes", f"{recipe_name}.yaml")
         with open(path) as f:
             data = yaml.safe_load(f.read())
-        assert isinstance(data, dict), f"recipes/{recipe_name}.yaml did not parse as a dict"
+        assert isinstance(data, dict), (
+            f"recipes/{recipe_name}.yaml did not parse as a dict"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -327,7 +331,9 @@ class TestSkills:
     @pytest.mark.parametrize("skill_name", ALL_SKILLS)
     def test_skill_directory_exists(self, skill_name):
         path = os.path.join(BUNDLE_ROOT, "skills", skill_name)
-        assert os.path.isdir(path), f"Skill directory skills/{skill_name}/ does not exist"
+        assert os.path.isdir(path), (
+            f"Skill directory skills/{skill_name}/ does not exist"
+        )
 
     @pytest.mark.parametrize("skill_name", ALL_SKILLS)
     def test_skill_has_skill_md(self, skill_name):
@@ -357,7 +363,9 @@ class TestContextFiles:
     def test_four_example_files_exist(self):
         examples_dir = os.path.join(BUNDLE_ROOT, "context", "examples")
         examples = [
-            f for f in os.listdir(examples_dir) if os.path.isfile(os.path.join(examples_dir, f))
+            f
+            for f in os.listdir(examples_dir)
+            if os.path.isfile(os.path.join(examples_dir, f))
         ]
         assert len(examples) == 4, (
             f"Expected 4 example files in context/examples/, found {len(examples)}: {examples}"
@@ -374,7 +382,9 @@ class TestTemplates:
         assert os.path.isfile(os.path.join(BUNDLE_ROOT, "templates", "STATE.yaml"))
 
     def test_context_transfer_md_exists(self):
-        assert os.path.isfile(os.path.join(BUNDLE_ROOT, "templates", "CONTEXT-TRANSFER.md"))
+        assert os.path.isfile(
+            os.path.join(BUNDLE_ROOT, "templates", "CONTEXT-TRANSFER.md")
+        )
 
     def test_scratch_md_exists(self):
         assert os.path.isfile(os.path.join(BUNDLE_ROOT, "templates", "SCRATCH.md"))
@@ -395,7 +405,9 @@ class TestTemplates:
         assert os.path.isfile(path)
 
     def test_docker_compose_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "templates", "docker-compose.harness-machine.yaml")
+        path = os.path.join(
+            BUNDLE_ROOT, "templates", "docker-compose.harness-machine.yaml"
+        )
         assert os.path.isfile(path)
 
     def test_three_scripts_exist(self):
@@ -461,7 +473,9 @@ class TestYamlValidity:
         path = os.path.join(BUNDLE_ROOT, "recipes", f"{recipe_name}.yaml")
         with open(path) as f:
             data = yaml.safe_load(f.read())
-        assert isinstance(data, dict), f"recipes/{recipe_name}.yaml did not parse as a dict"
+        assert isinstance(data, dict), (
+            f"recipes/{recipe_name}.yaml did not parse as a dict"
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -516,58 +530,77 @@ class TestRuntime:
     def test_runtime_dir_exists(self):
         assert os.path.isdir(os.path.join(BUNDLE_ROOT, "runtime"))
 
-    def test_runtime_init_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "__init__.py")
+    # Pico tier (single-provider, no-frills constrained agent CLI)
+    def test_pico_dir_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "pico")
+        assert os.path.isdir(path)
+
+    def test_pico_has_gate_py(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "gate.py")
         assert os.path.isfile(path)
 
-    def test_runtime_py_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "runtime.py")
+    def test_pico_has_tools_py(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "tools.py")
         assert os.path.isfile(path)
 
-    def test_tools_py_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "tools.py")
+    def test_pico_has_runtime_py(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "runtime.py")
         assert os.path.isfile(path)
 
-    def test_cli_py_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "cli.py")
+    def test_pico_has_cli_py(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "cli.py")
         assert os.path.isfile(path)
 
-    def test_pyproject_template_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "pyproject.toml.template")
-        assert os.path.isfile(path)
-
-    def test_dockerfile_template_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "Dockerfile.template")
-        assert os.path.isfile(path)
-
-    def test_docker_compose_template_exists(self):
-        path = os.path.join(BUNDLE_ROOT, "runtime", "docker-compose.template.yaml")
-        assert os.path.isfile(path)
-
-    def test_docker_compose_template_has_project_root(self):
-        content = _read_file("runtime/docker-compose.template.yaml")
-        assert "{{project_root}}" in content
-
-    def test_runtime_py_has_constraint_gate(self):
-        content = _read_file("runtime/runtime.py")
+    def test_pico_gate_has_constraint_gate(self):
+        content = _read_file("runtime/pico/gate.py")
         assert "ConstraintGate" in content
 
-    def test_runtime_py_has_agent_loop(self):
-        content = _read_file("runtime/runtime.py")
-        assert "AgentLoop" in content
+    def test_pico_runtime_has_pico_agent(self):
+        content = _read_file("runtime/pico/runtime.py")
+        assert "PicoAgent" in content
 
-    def test_tools_py_has_tool_executor(self):
-        content = _read_file("runtime/tools.py")
-        assert "ToolExecutor" in content
+    def test_pico_tools_has_local_tool_executor(self):
+        content = _read_file("runtime/pico/tools.py")
+        assert "LocalToolExecutor" in content
 
-    def test_cli_py_has_main(self):
-        content = _read_file("runtime/cli.py")
+    def test_pico_cli_has_main(self):
+        content = _read_file("runtime/pico/cli.py")
         assert "def main(" in content
 
-    def test_pyproject_template_has_harness_name(self):
-        content = _read_file("runtime/pyproject.toml.template")
+    def test_pico_pyproject_template_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "pyproject.toml.template")
+        assert os.path.isfile(path)
+
+    def test_pico_pyproject_template_has_harness_name(self):
+        content = _read_file("runtime/pico/pyproject.toml.template")
         assert "{{harness_name}}" in content
 
-    def test_dockerfile_template_has_harness_name(self):
-        content = _read_file("runtime/Dockerfile.template")
-        assert "{{harness_name}}" in content
+    def test_pico_dockerfile_template_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "pico", "Dockerfile.template")
+        assert os.path.isfile(path)
+
+    def test_pico_dockerfile_uses_python311_slim(self):
+        content = _read_file("runtime/pico/Dockerfile.template")
+        assert "python:3.11-slim" in content
+
+    def test_pico_docker_compose_template_exists(self):
+        path = os.path.join(
+            BUNDLE_ROOT, "runtime", "pico", "docker-compose.template.yaml"
+        )
+        assert os.path.isfile(path)
+
+    def test_pico_docker_compose_has_project_root(self):
+        content = _read_file("runtime/pico/docker-compose.template.yaml")
+        assert "{{project_root}}" in content
+
+    # Nano tier — future work
+    @pytest.mark.xfail(reason="nano tier not yet implemented", strict=False)
+    def test_nano_dir_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "nano")
+        assert os.path.isdir(path)
+
+    # Micro tier — future work
+    @pytest.mark.xfail(reason="micro tier not yet implemented", strict=False)
+    def test_micro_dir_exists(self):
+        path = os.path.join(BUNDLE_ROOT, "runtime", "micro")
+        assert os.path.isdir(path)

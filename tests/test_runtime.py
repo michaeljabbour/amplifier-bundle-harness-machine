@@ -1,53 +1,56 @@
-"""Tests for the standalone runtime (runtime/runtime.py).
+"""Tests for the pico runtime (runtime/pico/runtime.py).
 
 All LLM calls are mocked — these tests verify the constraint gate logic,
 retry loop, and conversation management, not the LLM itself.
 """
 
+from __future__ import annotations
+
+import asyncio
 import os
 import sys
+from unittest.mock import MagicMock
 
-# Add runtime to path
-sys.path.insert(
-    0,
-    os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runtime"
-    ),
+# Add runtime/pico to path (pico tier replaced the flat runtime files)
+_RUNTIME_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runtime"
 )
+sys.path.insert(0, os.path.join(_RUNTIME_DIR, "pico"))
+sys.path.insert(0, _RUNTIME_DIR)
 
 FIXTURES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "fixtures")
 
 
 # ---------------------------------------------------------------------------
-# Mock LLM response helpers
+# Mock litellm response helpers
 # ---------------------------------------------------------------------------
 
 
-def make_tool_call_response(tool_name, parameters, call_id="call_001"):
-    """Build a mock LLM response that proposes a tool call."""
-    return {
-        "role": "assistant",
-        "content": None,
-        "tool_calls": [
-            {
-                "id": call_id,
-                "type": "function",
-                "function": {
-                    "name": tool_name,
-                    "arguments": parameters,
-                },
-            }
-        ],
-    }
+def _make_tool_call_choice(tool_name, parameters, call_id="call_001"):
+    """Build a mock litellm choice that proposes a tool call."""
+    tc = MagicMock()
+    tc.id = call_id
+    tc.type = "function"
+    tc.function.name = tool_name
+    tc.function.arguments = (
+        parameters if isinstance(parameters, str) else str(parameters)
+    )
+    choice = MagicMock()
+    choice.message.content = None
+    choice.message.tool_calls = [tc]
+    response = MagicMock()
+    response.choices = [choice]
+    return response
 
 
-def make_text_response(text):
-    """Build a mock LLM response that is plain text (no tool call)."""
-    return {
-        "role": "assistant",
-        "content": text,
-        "tool_calls": None,
-    }
+def _make_text_choice(text):
+    """Build a mock litellm choice that is plain text (no tool call)."""
+    choice = MagicMock()
+    choice.message.content = text
+    choice.message.tool_calls = None
+    response = MagicMock()
+    response.choices = [choice]
+    return response
 
 
 # ---------------------------------------------------------------------------
@@ -59,7 +62,7 @@ class TestConstraintGate:
     """Test the constraint gate that checks actions before dispatch."""
 
     def test_gate_blocks_illegal_action(self, tmp_path):
-        from runtime import ConstraintGate
+        from gate import ConstraintGate  # type: ignore[import]
 
         gate = ConstraintGate(
             constraints_path=os.path.join(FIXTURES_DIR, "constraints_simple.py")
@@ -69,7 +72,7 @@ class TestConstraintGate:
         assert "rm" in reason.lower()
 
     def test_gate_passes_legal_action(self, tmp_path):
-        from runtime import ConstraintGate
+        from gate import ConstraintGate  # type: ignore[import]
 
         gate = ConstraintGate(
             constraints_path=os.path.join(FIXTURES_DIR, "constraints_simple.py")
@@ -79,133 +82,122 @@ class TestConstraintGate:
         assert reason == ""
 
     def test_gate_exception_treated_as_deny(self):
-        from runtime import ConstraintGate
+        from gate import ConstraintGate  # type: ignore[import]
 
         gate = ConstraintGate(
             constraints_path=os.path.join(FIXTURES_DIR, "constraints_simple.py")
         )
-        # None tool_name will likely cause an exception in the constraint
+        # None tool_name will cause a TypeError which is caught and returned as deny
         is_legal, reason = gate.check(None, None)
         assert is_legal is False
 
 
 # ---------------------------------------------------------------------------
-# Tests: agent loop
+# Tests: PicoAgent
 # ---------------------------------------------------------------------------
 
 
-class TestAgentLoop:
-    """Test the agent loop with mocked LLM."""
+class TestPicoAgent:
+    """Test the async PicoAgent loop with mocked litellm."""
 
-    def test_retry_on_illegal_action(self, tmp_path):
-        """Agent retries when constraint gate blocks an action."""
-        from runtime import AgentLoop
+    def _make_agent(self, tmp_path):
+        from gate import ConstraintGate  # type: ignore[import]
+        from runtime import PicoAgent  # type: ignore[import]
+        from tools import LocalToolExecutor  # type: ignore[import]
 
-        # First call: LLM proposes illegal action
-        # Second call: LLM proposes legal action (text response = done)
-        call_count = 0
-        illegal_response = make_tool_call_response("bash", {"command": "rm -rf /"})
-        legal_response = make_text_response("I'll use a different approach.")
-
-        def mock_llm(messages, tools=None, model=None):
-            nonlocal call_count
-            call_count += 1
-            if call_count == 1:
-                return illegal_response
-            return legal_response
-
-        # Create a test file so ToolExecutor has a project
         (tmp_path / "file.txt").write_text("test")
-
-        loop = AgentLoop(
+        gate = ConstraintGate(
             constraints_path=os.path.join(FIXTURES_DIR, "constraints_simple.py"),
             project_root=str(tmp_path),
+        )
+        executor = LocalToolExecutor(str(tmp_path))
+        return PicoAgent(
+            gate=gate,
+            executor=executor,
             system_prompt="You are a test agent.",
             model="mock",
             max_retries=3,
-            llm_fn=mock_llm,
         )
 
-        result = loop.process_turn("Do something dangerous")
+    def test_retry_on_illegal_action(self, tmp_path):
+        """Agent retries when constraint gate blocks an action."""
+        from unittest.mock import patch
+
+        agent = self._make_agent(tmp_path)
+
+        call_count = 0
+        illegal = _make_tool_call_choice("bash", '{"command": "rm -rf /"}')
+        legal = _make_text_choice("I'll use a different approach.")
+
+        async def mock_acompletion(**kwargs):
+            nonlocal call_count
+            call_count += 1
+            return illegal if call_count == 1 else legal
+
+        with patch("litellm.acompletion", side_effect=mock_acompletion):
+            result = asyncio.run(agent.process_turn("Do something dangerous"))
+
         assert call_count == 2  # retried once
         assert "different approach" in result.lower()
 
     def test_max_retries_exhaustion(self, tmp_path):
         """Agent gives up after max_retries consecutive rejections."""
-        from runtime import AgentLoop
+        from unittest.mock import patch
 
-        illegal_response = make_tool_call_response("bash", {"command": "rm -rf /"})
+        agent = self._make_agent(tmp_path)
+        agent.max_retries = 2
+        illegal = _make_tool_call_choice("bash", '{"command": "rm -rf /"}')
 
-        def mock_llm(messages, tools=None, model=None):
-            return illegal_response  # always proposes illegal action
+        async def mock_acompletion(**kwargs):
+            return illegal
 
-        (tmp_path / "file.txt").write_text("test")
+        with patch("litellm.acompletion", side_effect=mock_acompletion):
+            result = asyncio.run(agent.process_turn("Do something dangerous"))
 
-        loop = AgentLoop(
-            constraints_path=os.path.join(FIXTURES_DIR, "constraints_simple.py"),
-            project_root=str(tmp_path),
-            system_prompt="You are a test agent.",
-            model="mock",
-            max_retries=2,
-            llm_fn=mock_llm,
-        )
-
-        result = loop.process_turn("Do something dangerous")
         assert "max retries" in result.lower() or "exhausted" in result.lower()
 
     def test_legal_tool_call_dispatches_and_returns(self, tmp_path):
         """Legal tool call is dispatched to executor and result returned to LLM."""
-        from runtime import AgentLoop
+        import json
+        from unittest.mock import patch
 
         (tmp_path / "hello.txt").write_text("Hello from test!")
+        agent = self._make_agent(tmp_path)
 
         call_count = 0
-        tool_response = make_tool_call_response(
-            "read_file",
-            {"file_path": str(tmp_path / "hello.txt")},
+        tool_resp = _make_tool_call_choice(
+            "read_file", json.dumps({"file_path": str(tmp_path / "hello.txt")})
         )
-        final_response = make_text_response("The file says: Hello from test!")
+        final_resp = _make_text_choice("The file says: Hello from test!")
 
-        def mock_llm(messages, tools=None, model=None):
+        async def mock_acompletion(**kwargs):
             nonlocal call_count
             call_count += 1
-            if call_count == 1:
-                return tool_response
-            return final_response
+            return tool_resp if call_count == 1 else final_resp
 
-        loop = AgentLoop(
-            constraints_path=os.path.join(FIXTURES_DIR, "constraints_simple.py"),
-            project_root=str(tmp_path),
-            system_prompt="You are a test agent.",
-            model="mock",
-            max_retries=3,
-            llm_fn=mock_llm,
-        )
+        with patch("litellm.acompletion", side_effect=mock_acompletion):
+            result = asyncio.run(agent.process_turn("Read hello.txt"))
 
-        result = loop.process_turn("Read hello.txt")
         assert "Hello from test" in result
 
     def test_conversation_history_accumulates(self, tmp_path):
         """Each turn adds to conversation history."""
-        from runtime import AgentLoop
+        from unittest.mock import patch
 
-        (tmp_path / "f.txt").write_text("x")
+        agent = self._make_agent(tmp_path)
 
-        def mock_llm(messages, tools=None, model=None):
-            return make_text_response(
-                f"Response (history has {len(messages)} messages)"
+        call_count = 0
+
+        async def mock_acompletion(**kwargs):
+            nonlocal call_count
+            call_count += 1
+            return _make_text_choice(
+                f"Response (history has {len(kwargs['messages'])} messages)"
             )
 
-        loop = AgentLoop(
-            constraints_path=os.path.join(FIXTURES_DIR, "constraints_simple.py"),
-            project_root=str(tmp_path),
-            system_prompt="You are a test agent.",
-            model="mock",
-            max_retries=3,
-            llm_fn=mock_llm,
-        )
+        with patch("litellm.acompletion", side_effect=mock_acompletion):
+            asyncio.run(agent.process_turn("First message"))
+            asyncio.run(agent.process_turn("Second message"))
 
-        loop.process_turn("First message")
-        loop.process_turn("Second message")
         # system + user1 + assistant1 + user2 + assistant2 = 5
-        assert len(loop.messages) == 5
+        assert len(agent.messages) == 5

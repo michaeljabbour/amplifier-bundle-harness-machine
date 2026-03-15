@@ -1,29 +1,48 @@
-"""CLI entry point for standalone nano-amplifier agents.
+"""CLI entry point for pico standalone constrained-agent.
 
 Subcommands:
-    chat   — Interactive constrained agent session
+    chat   — Interactive constrained agent session (with Rich rendering)
     check  — One-shot constraint validation
-    audit  — Post-hoc analysis of an agent transcript
+    audit  — Dry-run LLM validation against a transcript
 
-Usage:
+Usage::
+
     pico-amplifier chat
     pico-amplifier check bash '{"command": "rm -rf /"}'
     pico-amplifier audit transcript.json
+
+KeyboardInterrupt during a response shows "Cancelled." and returns to prompt.
+EOFError (Ctrl-D at prompt) prints "Goodbye." and exits cleanly.
 """
 
 from __future__ import annotations
 
 import argparse
+import asyncio
 import json
 import os
 import sys
 
 
 # ---------------------------------------------------------------------------
-# Config loading
+# Rich imports (graceful degradation if not installed)
 # ---------------------------------------------------------------------------
 
-DEFAULT_CONFIG = {
+try:
+    from rich.console import Console
+    from rich.markdown import Markdown
+
+    _RICH_AVAILABLE = True
+except ImportError:
+    _RICH_AVAILABLE = False  # type: ignore[assignment]
+    Console = None  # type: ignore[misc, assignment]
+    Markdown = None  # type: ignore[assignment]
+
+# ---------------------------------------------------------------------------
+# Config defaults
+# ---------------------------------------------------------------------------
+
+DEFAULT_CONFIG: dict[str, object] = {
     "project_root": os.getcwd(),
     "model": "anthropic/claude-sonnet-4-20250514",
     "harness_type": "action-verifier",
@@ -37,19 +56,16 @@ DEFAULT_SYSTEM_PROMPT = (
     "Do not repeat rejected actions."
 )
 
+# ---------------------------------------------------------------------------
+# Config + prompt loading
+# ---------------------------------------------------------------------------
+
 
 def load_config(config_path: str) -> dict:
-    """Load config from a YAML file.
-
-    Args:
-        config_path: Path to config.yaml.
-
-    Returns:
-        Config dict. Falls back to defaults for missing keys or missing file.
-    """
+    """Load config from config.yaml; falls back to DEFAULT_CONFIG for missing keys."""
     config = dict(DEFAULT_CONFIG)
     try:
-        import yaml
+        import yaml  # type: ignore[import-untyped]
 
         with open(config_path) as f:
             user_config = yaml.safe_load(f.read())
@@ -63,14 +79,7 @@ def load_config(config_path: str) -> dict:
 
 
 def load_system_prompt(prompt_path: str) -> str:
-    """Load system prompt from a markdown file.
-
-    Args:
-        prompt_path: Path to system-prompt.md.
-
-    Returns:
-        Prompt string. Falls back to default if file is missing.
-    """
+    """Load system prompt from system-prompt.md; returns DEFAULT_SYSTEM_PROMPT if missing."""
     try:
         with open(prompt_path) as f:
             return f.read().strip()
@@ -86,7 +95,7 @@ def load_system_prompt(prompt_path: str) -> str:
 def build_parser() -> argparse.ArgumentParser:
     """Build the CLI argument parser."""
     parser = argparse.ArgumentParser(
-        description="Standalone nano-amplifier constrained agent",
+        description="Pico standalone constrained agent",
     )
     parser.add_argument(
         "--config",
@@ -110,7 +119,9 @@ def build_parser() -> argparse.ArgumentParser:
     check_parser.add_argument("params_json", help="Tool parameters as JSON string")
 
     # audit
-    audit_parser = subparsers.add_parser("audit", help="Post-hoc transcript analysis")
+    audit_parser = subparsers.add_parser(
+        "audit", help="Dry-run LLM validation against a transcript"
+    )
     audit_parser.add_argument("transcript_file", help="Path to transcript JSON file")
 
     return parser
@@ -126,7 +137,7 @@ def run_check(
     tool_name: str,
     params_json: str,
 ) -> tuple[bool, str]:
-    """Run a one-shot constraint check.
+    """Run a one-shot constraint check and return (is_legal, reason).
 
     Args:
         constraints_path: Path to constraints.py.
@@ -134,17 +145,27 @@ def run_check(
         params_json: JSON string of tool parameters.
 
     Returns:
-        (is_legal, reason) tuple.
+        ``(True, "")`` for legal actions; ``(False, reason)`` for illegal ones.
     """
     try:
         params = json.loads(params_json)
     except json.JSONDecodeError as exc:
         return False, f"Invalid JSON parameters: {exc}"
 
-    from runtime import ConstraintGate
+    from pico.gate import ConstraintGate
 
     gate = ConstraintGate(constraints_path)
     return gate.check(tool_name, params)
+
+
+def cmd_check(constraints_path: str, tool_name: str, params_json: str) -> None:
+    """Run a one-shot constraint check and print result."""
+    is_legal, reason = run_check(constraints_path, tool_name, params_json)
+    if is_legal:
+        print(f"LEGAL: {tool_name}")
+    else:
+        print(f"ILLEGAL: {tool_name} — {reason}")
+    sys.exit(0 if is_legal else 1)
 
 
 # ---------------------------------------------------------------------------
@@ -152,35 +173,64 @@ def run_check(
 # ---------------------------------------------------------------------------
 
 
-def run_chat(config: dict, system_prompt: str) -> None:
-    """Run an interactive constrained agent session.
+def cmd_chat(config: dict, system_prompt: str) -> None:
+    """Run an interactive constrained agent session with Rich rendering."""
+    from pico.gate import ConstraintGate
+    from pico.runtime import PicoAgent
+    from pico.tools import LocalToolExecutor
 
-    Args:
-        config: Loaded configuration dict.
-        system_prompt: System prompt string.
-    """
-    from runtime import AgentLoop
-
-    loop = AgentLoop(
-        constraints_path=config["constraints_path"],
-        project_root=config["project_root"],
+    gate = ConstraintGate(
+        constraints_path=str(config["constraints_path"]),
+        project_root=str(config["project_root"]),
+    )
+    executor = LocalToolExecutor(str(config["project_root"]))
+    agent = PicoAgent(
+        gate=gate,
+        executor=executor,
         system_prompt=system_prompt,
-        model=config["model"],
-        max_retries=config["max_retries"],
+        model=str(config["model"]),
+        max_retries=int(config["max_retries"]),  # type: ignore[arg-type]
     )
 
-    print(f"Constrained agent ready. Project: {config['project_root']}")
-    print("Type 'exit' or Ctrl+C to quit.\n")
+    if _RICH_AVAILABLE:
+        console = Console()
+        console.print(
+            f"[bold green]Pico agent ready.[/bold green] "
+            f"Project: {config['project_root']}"
+        )
+        console.print("Type [bold]exit[/bold] or [bold]Ctrl-C[/bold] to quit.\n")
+    else:
+        print(f"Pico agent ready. Project: {config['project_root']}")
+        print("Type 'exit' or Ctrl-C to quit.\n")
+        console = None  # type: ignore[assignment]
 
     try:
         while True:
-            user_input = input("You: ").strip()
+            try:
+                user_input = input("You: ").strip()
+            except EOFError:
+                print("\nGoodbye.")
+                return
+
             if not user_input or user_input.lower() in ("exit", "quit"):
-                break
-            response = loop.process_turn(user_input)
-            print(f"\nAgent: {response}\n")
-    except (KeyboardInterrupt, EOFError):
-        print("\nSession ended.")
+                print("Goodbye.")
+                return
+
+            try:
+                response = asyncio.run(agent.process_turn(user_input))
+            except KeyboardInterrupt:
+                print("\nCancelled.")
+                continue
+
+            if _RICH_AVAILABLE and console is not None:
+                console.print("\n[bold]Agent:[/bold]")
+                console.print(Markdown(response))
+                console.print()
+            else:
+                print(f"\nAgent: {response}\n")
+
+    except KeyboardInterrupt:
+        print("\nGoodbye.")
 
 
 # ---------------------------------------------------------------------------
@@ -188,16 +238,11 @@ def run_chat(config: dict, system_prompt: str) -> None:
 # ---------------------------------------------------------------------------
 
 
-def run_audit(config: dict, transcript_path: str) -> None:
-    """Audit a transcript file for constraint violations.
+def cmd_audit(config: dict, transcript_path: str) -> None:
+    """Dry-run LLM validation against a transcript file."""
+    from pico.gate import ConstraintGate
 
-    Args:
-        config: Loaded configuration dict.
-        transcript_path: Path to transcript JSON file.
-    """
-    from runtime import ConstraintGate
-
-    gate = ConstraintGate(config["constraints_path"])
+    gate = ConstraintGate(str(config["constraints_path"]))
 
     try:
         with open(transcript_path) as f:
@@ -246,20 +291,15 @@ def main() -> None:
     system_prompt = load_system_prompt(args.system_prompt)
 
     if args.subcommand == "chat":
-        run_chat(config, system_prompt)
+        cmd_chat(config, system_prompt)
     elif args.subcommand == "check":
-        is_legal, reason = run_check(
-            config["constraints_path"],
-            args.tool_name,
-            args.params_json,
+        cmd_check(
+            constraints_path=str(config["constraints_path"]),
+            tool_name=args.tool_name,
+            params_json=args.params_json,
         )
-        if is_legal:
-            print(f"LEGAL: {args.tool_name}")
-        else:
-            print(f"ILLEGAL: {args.tool_name} — {reason}")
-        sys.exit(0 if is_legal else 1)
     elif args.subcommand == "audit":
-        run_audit(config, args.transcript_file)
+        cmd_audit(config, args.transcript_file)
 
 
 if __name__ == "__main__":

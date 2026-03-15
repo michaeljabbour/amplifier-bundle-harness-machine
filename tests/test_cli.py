@@ -7,7 +7,12 @@ The chat subcommand requires an LLM, so it is not tested here.
 import os
 import sys
 
-# Add runtime to path
+# Add runtime/pico to path (pico tier replaced the flat runtime files)
+_RUNTIME_PICO = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runtime", "pico"
+)
+sys.path.insert(0, _RUNTIME_PICO)
+# Also add runtime/ so `pico` package is importable for internal cross-imports
 sys.path.insert(
     0,
     os.path.join(

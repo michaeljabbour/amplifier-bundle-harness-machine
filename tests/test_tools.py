@@ -10,13 +10,12 @@ import tempfile
 
 import pytest
 
-# Add runtime to path
-sys.path.insert(
-    0,
-    os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runtime"
-    ),
+# Add runtime/pico to path (pico tier replaced the flat runtime files)
+_RUNTIME_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "runtime"
 )
+sys.path.insert(0, os.path.join(_RUNTIME_DIR, "pico"))
+sys.path.insert(0, _RUNTIME_DIR)
 
 
 @pytest.fixture
@@ -31,10 +30,10 @@ def project(tmp_path):
 
 @pytest.fixture
 def tools(project):
-    """Create a ToolExecutor bound to the temp project."""
-    from tools import ToolExecutor
+    """Create a LocalToolExecutor bound to the temp project."""
+    from tools import LocalToolExecutor  # type: ignore[import]
 
-    return ToolExecutor(project_root=str(project))
+    return LocalToolExecutor(project_root=str(project))
 
 
 # ---------------------------------------------------------------------------
@@ -155,16 +154,16 @@ class TestGrep:
 
 class TestGlob:
     def test_glob_finds_files(self, tools, project):
-        result = tools.glob_files("**/*.py", str(project))
+        result = tools.glob("**/*.py", str(project))
         assert "main.py" in result
 
     def test_glob_relative_path(self, tools):
-        result = tools.glob_files("**/*.txt", ".")
+        result = tools.glob("**/*.txt", ".")
         assert "hello.txt" in result
 
     def test_glob_outside_project_raises(self, tools):
         with pytest.raises(PermissionError, match="outside project root"):
-            tools.glob_files("*.conf", "/etc")
+            tools.glob("*.conf", "/etc")
 
 
 # ---------------------------------------------------------------------------
