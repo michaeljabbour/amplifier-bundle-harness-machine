@@ -4,7 +4,7 @@ Validates:
 - bundle.md exists with valid YAML frontmatter
 - behaviors/harness-machine.yaml exists with correct config
 - All 7 mode files exist with correct structure
-- All 7 agent files exist with correct structure
+- All 9 agent files exist with correct structure
 - All 4 recipe files exist and parse as valid YAML
 - All 3 skills have SKILL.md files
 - Context files exist
@@ -75,7 +75,7 @@ class TestBundleMd:
 
     def test_agents_include_contains_all_nine_agents(self):
         fm = _parse_frontmatter(_read_file("bundle.md"))
-        agents_str = str(fm["agents"]["include"])
+        agent_names = [entry.split(":")[-1] for entry in fm["agents"]["include"]]
         for name in [
             "environment-analyst",
             "mission-architect",
@@ -87,7 +87,7 @@ class TestBundleMd:
             "harness-refiner",
             "harness-evaluator",
         ]:
-            assert name in agents_str, f"Agent {name!r} not found in agents.include"
+            assert name in agent_names, f"Agent {name!r} not found in agents.include"
 
     def test_includes_has_two_entries(self):
         fm = _parse_frontmatter(_read_file("bundle.md"))
