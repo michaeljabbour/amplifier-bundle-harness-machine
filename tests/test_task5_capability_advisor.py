@@ -48,7 +48,12 @@ def _get_frontmatter(rel_path="agents/capability-advisor.md"):
 
 
 def _get_body(rel_path="agents/capability-advisor.md"):
-    """Return the markdown body (after frontmatter) of a file."""
+    """Return the markdown body (after frontmatter) of a file.
+
+    Splits on '---' with a max of 3 parts (opening delimiter, frontmatter, body).
+    This assumes no bare '---' horizontal rules exist above the split depth inside
+    the frontmatter block itself — which is safe for standard YAML-fenced documents.
+    """
     return _read_file(rel_path).split("---", 2)[2]
 
 
@@ -325,16 +330,16 @@ class TestCapabilityAdvisorAgent:
 
     def test_body_capability_picker_has_llm_providers_section(self):
         body = _get_body()
-        body_lower = body.lower()
-        assert "llm provider" in body_lower or (
-            "provider" in body_lower and ("checkbox" in body_lower or "- [" in body)
-        ), "Capability Picker must include LLM Providers section"
+        assert "llm provider" in body.lower(), (
+            "Capability Picker must include LLM Providers section"
+        )
 
     def test_body_capability_picker_has_tools_section(self):
         body = _get_body()
-        # The picker should show tools with checkboxes
-        assert "- [" in body and ("tool" in body.lower()), (
-            "Capability Picker must include Tools section with checkboxes"
+        # The picker must contain a '### Tools' heading inside the capability picker block,
+        # which is more discriminating than checking for the word "tool" (present throughout).
+        assert "### Tools" in body, (
+            "Capability Picker must include '### Tools' section heading"
         )
 
     def test_body_capability_picker_has_features_section(self):
