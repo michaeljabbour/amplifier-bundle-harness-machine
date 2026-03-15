@@ -189,3 +189,63 @@ Must export the core functions for the chosen `harness_type`. Must be pure Pytho
 ### context.md
 
 Describes: what environment this constrains, what the action space is, why each constraint exists, known limitations.
+
+## Deployment Mode Enum
+
+Each generated harness is deployed in one of three modes. The mode determines the entry point and packaging format.
+
+| Mode | Description | Entry Point | Use When |
+|------|-------------|-------------|----------|
+| `standalone` | Self-contained CLI package, runs without Amplifier | `<harness_name> chat` (pip-installed) | Delivering to teams who don't use Amplifier |
+| `in-app` | Amplifier hook only, embedded in an existing bundle | `behavior.yaml` via `includes:` | Enhancing an existing Amplifier workflow |
+| `hybrid` | Both standalone CLI and Amplifier hook, side-by-side | CLI + behavior.yaml compose | Maximum flexibility, local dev + Amplifier integration |
+
+### Entry Points by Deployment Mode
+
+| Mode | Amplifier Entry | Standalone Entry | Docker Entry |
+|------|----------------|-----------------|--------------|
+| `standalone` | — | `<harness_name> chat` | `docker compose up` |
+| `in-app` | `includes: ./behavior.yaml` | — | — |
+| `hybrid` | `includes: ./behavior.yaml` | `<harness_name> chat` | `docker compose up` |
+
+### Deployment Mode in Config
+
+All generated `config.yaml` files carry a `deployment_mode` field stamped at generation time:
+
+```yaml
+deployment_mode: standalone  # standalone | in-app | hybrid
+```
+
+## Version Stamping Spec
+
+Every generated harness artifact includes version stamping fields in its `config.yaml`. These fields are populated at generation time and provide traceability back to the harness-machine version that produced the artifact.
+
+### Required Stamping Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `generated_version` | string | Harness-machine version that generated this artifact (e.g. `0.2.0`) |
+| `generated_by` | string | Generator identifier (e.g. `harness-machine:harness-generator`) |
+| `deployment_mode` | string | Deployment mode: `standalone`, `in-app`, or `hybrid` |
+| `harness_name` | string | Mission-based name for this harness (e.g. `chess-legal-moves`) |
+| `package_name` | string | Python package name (snake_case, e.g. `chess_legal_moves`) |
+| `tier` | string | Size tier: `pico`, `nano`, or `micro` |
+| `project_root` | string | Absolute path to the project root at generation time |
+| `model` | string | LLM model used during generation (e.g. `claude-opus-4-5`) |
+
+### Template Variables
+
+Config templates use Mustache-style double-brace syntax for variable substitution:
+
+```yaml
+generated_version: {{generated_version}}
+generated_by: {{generated_by}}
+deployment_mode: {{deployment_mode}}
+harness_name: {{harness_name}}
+package_name: {{package_name}}
+tier: {{tier}}
+project_root: {{project_root}}
+model: {{model}}
+```
+
+Substitution is performed by `harness-machine:harness-generator` at generation time.

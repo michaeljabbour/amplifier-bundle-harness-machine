@@ -1,6 +1,6 @@
 """Structural tests for the Nano Runtime Scaffold.
 
-Validates that runtime/nano/ contains exactly 13 files with the required
+Validates that runtime/nano/ contains exactly 14 files with the required
 structural patterns (imports, classes, functions, template vars).
 
 ~40 tests across 7 test classes.
@@ -27,7 +27,7 @@ def _read_nano(filename: str) -> str:
 # TestNanoFilesExist
 # ---------------------------------------------------------------------------
 
-# 9 pico files (copied into nano)
+# 10 pico files (copied into nano)
 PICO_FILES = [
     "__init__.py",
     "gate.py",
@@ -38,6 +38,7 @@ PICO_FILES = [
     "pyproject.toml.template",
     "Dockerfile.template",
     "docker-compose.template.yaml",
+    "config.yaml.template",
 ]
 
 # 4 nano-specific files
@@ -48,22 +49,22 @@ NANO_SPECIFIC_FILES = [
     "providers.py",
 ]
 
-ALL_THIRTEEN = PICO_FILES + NANO_SPECIFIC_FILES
+ALL_FOURTEEN = PICO_FILES + NANO_SPECIFIC_FILES
 
 
 class TestNanoFilesExist:
-    @pytest.mark.parametrize("filename", ALL_THIRTEEN)
+    @pytest.mark.parametrize("filename", ALL_FOURTEEN)
     def test_nano_file_exists(self, filename):
         path = os.path.join(NANO_DIR, filename)
         assert os.path.isfile(path), f"Missing: runtime/nano/{filename}"
 
-    def test_nano_dir_has_exactly_thirteen_files(self):
-        """runtime/nano/ must contain exactly 13 files."""
+    def test_nano_dir_has_exactly_fourteen_files(self):
+        """runtime/nano/ must contain exactly 14 files."""
         files = [
             f for f in os.listdir(NANO_DIR) if os.path.isfile(os.path.join(NANO_DIR, f))
         ]
-        assert sorted(files) == sorted(ALL_THIRTEEN), (
-            f"Expected {sorted(ALL_THIRTEEN)}, got {sorted(files)}"
+        assert sorted(files) == sorted(ALL_FOURTEEN), (
+            f"Expected {sorted(ALL_FOURTEEN)}, got {sorted(files)}"
         )
 
 

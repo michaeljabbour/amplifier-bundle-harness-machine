@@ -1,7 +1,7 @@
 ---
 bundle:
   name: harness-machine
-  version: 0.1.0
+  version: 0.2.0
   description: |
     Mini-amplifier factory for LLM constraint harness generation.
     Based on the AutoHarness paper (Lou et al., Google DeepMind, 2026).

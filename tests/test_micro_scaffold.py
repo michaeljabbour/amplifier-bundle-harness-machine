@@ -1,6 +1,6 @@
 """Structural tests for the Micro Runtime Scaffold.
 
-Validates that runtime/micro/ contains exactly 18 files with the required
+Validates that runtime/micro/ contains exactly 19 files with the required
 structural patterns (imports, classes, functions, template vars).
 
 ~50 tests across 8 test classes.
@@ -27,7 +27,7 @@ def _read_micro(filename: str) -> str:
 # TestMicroFilesExist
 # ---------------------------------------------------------------------------
 
-# 13 nano files (copied into micro)
+# 14 nano files (copied into micro)
 NANO_FILES = [
     "__init__.py",
     "gate.py",
@@ -38,6 +38,7 @@ NANO_FILES = [
     "pyproject.toml.template",
     "Dockerfile.template",
     "docker-compose.template.yaml",
+    "config.yaml.template",
     "streaming.py",
     "session.py",
     "context.py",
@@ -53,24 +54,24 @@ MICRO_SPECIFIC_FILES = [
     "loader.py",
 ]
 
-ALL_EIGHTEEN = NANO_FILES + MICRO_SPECIFIC_FILES
+ALL_NINETEEN = NANO_FILES + MICRO_SPECIFIC_FILES
 
 
 class TestMicroFilesExist:
-    @pytest.mark.parametrize("filename", ALL_EIGHTEEN)
+    @pytest.mark.parametrize("filename", ALL_NINETEEN)
     def test_micro_file_exists(self, filename):
         path = os.path.join(MICRO_DIR, filename)
         assert os.path.isfile(path), f"Missing: runtime/micro/{filename}"
 
-    def test_micro_dir_has_exactly_eighteen_files(self):
-        """runtime/micro/ must contain exactly 18 files."""
+    def test_micro_dir_has_exactly_nineteen_files(self):
+        """runtime/micro/ must contain exactly 19 files."""
         files = [
             f
             for f in os.listdir(MICRO_DIR)
             if os.path.isfile(os.path.join(MICRO_DIR, f))
         ]
-        assert sorted(files) == sorted(ALL_EIGHTEEN), (
-            f"Expected {sorted(ALL_EIGHTEEN)}, got {sorted(files)}"
+        assert sorted(files) == sorted(ALL_NINETEEN), (
+            f"Expected {sorted(ALL_NINETEEN)}, got {sorted(files)}"
         )
 
 

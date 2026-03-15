@@ -1,6 +1,6 @@
 """Structural tests for the Pico Runtime Scaffold.
 
-Validates that runtime/pico/ contains exactly 9 files with the required
+Validates that runtime/pico/ contains exactly 10 files with the required
 structural patterns (imports, classes, functions, template vars).
 
 ~45 tests across 6 test classes.
@@ -38,6 +38,7 @@ PICO_FILES = [
     "pyproject.toml.template",
     "Dockerfile.template",
     "docker-compose.template.yaml",
+    "config.yaml.template",
 ]
 
 
@@ -47,8 +48,8 @@ class TestPicoFilesExist:
         path = os.path.join(PICO_DIR, filename)
         assert os.path.isfile(path), f"Missing: runtime/pico/{filename}"
 
-    def test_pico_dir_has_exactly_nine_files(self):
-        """runtime/pico/ must contain exactly 9 files (no extras, no missing)."""
+    def test_pico_dir_has_exactly_ten_files(self):
+        """runtime/pico/ must contain exactly 10 files (no extras, no missing)."""
         files = [
             f for f in os.listdir(PICO_DIR) if os.path.isfile(os.path.join(PICO_DIR, f))
         ]
