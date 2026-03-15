@@ -1,0 +1,24 @@
+FROM python:3.11-slim
+
+# Install system dependencies: git for VCS ops, ripgrep for fast grep
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    ripgrep \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a non-root user for security
+RUN useradd --create-home --shell /bin/bash agent
+
+WORKDIR /app
+
+# Copy harness package
+COPY standalone/ ./
+
+# Install system-wide while root (single-purpose container; no --user needed)
+RUN pip install --no-cache-dir -e .
+
+# Switch to non-root user for runtime
+USER agent
+
+ENTRYPOINT ["{{harness_name}}"]
+CMD ["chat"]
