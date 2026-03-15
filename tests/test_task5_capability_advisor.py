@@ -42,6 +42,11 @@ def _parse_frontmatter(content):
     return yaml.safe_load(parts[1])
 
 
+def _get_body(rel_path="agents/capability-advisor.md"):
+    """Return the markdown body (after frontmatter) of a file."""
+    return _read_file(rel_path).split("---", 2)[2]
+
+
 # ---------------------------------------------------------------------------
 # agents/capability-advisor.md tests
 # ---------------------------------------------------------------------------
@@ -148,29 +153,25 @@ class TestCapabilityAdvisorAgent:
     # ------------------------------------------------------------------
 
     def test_body_has_dynamic_discovery_section(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "dynamic discovery" in body.lower() or "Dynamic Discovery" in body, (
             "Body must have Dynamic Discovery section"
         )
 
     def test_body_discovery_runs_amplifier_module_list(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "amplifier module list" in body, (
             "Dynamic Discovery must mention 'amplifier module list'"
         )
 
     def test_body_discovery_runs_amplifier_bundle_list(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "amplifier bundle list" in body, (
             "Dynamic Discovery must mention 'amplifier bundle list'"
         )
 
     def test_body_discovery_organizes_by_type(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         # Must mention at least: Providers, Tools, Hooks, Orchestrators, Bundles
         assert "providers" in body.lower() or "Providers" in body
         assert "tools" in body.lower() or "Tools" in body
@@ -179,8 +180,7 @@ class TestCapabilityAdvisorAgent:
         assert "bundles" in body.lower() or "Bundles" in body
 
     def test_body_discovery_has_fallback(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert (
             "fall back" in body.lower()
             or "fallback" in body.lower()
@@ -192,124 +192,104 @@ class TestCapabilityAdvisorAgent:
     # ------------------------------------------------------------------
 
     def test_body_has_recommendation_process_section(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "recommendation process" in body.lower(), (
             "Body must have Recommendation Process section"
         )
 
     def test_body_has_analyze_mission_subsection(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert (
             "analyze the mission" in body.lower()
             or "analyse the mission" in body.lower()
         ), "Body must have 'Analyze the Mission' subsection"
 
     def test_body_analyze_mission_mentions_domain(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "domain" in body.lower()
 
     def test_body_analyze_mission_mentions_workflow_type(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "workflow" in body.lower()
 
     def test_body_has_recommend_tier_subsection(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "recommend tier" in body.lower(), (
             "Body must have 'Recommend Tier' subsection"
         )
 
     def test_body_tier_decision_table_mentions_pico(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "pico" in body.lower(), "Tier decision table must mention pico"
 
     def test_body_tier_decision_table_mentions_nano(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "nano" in body.lower(), "Tier decision table must mention nano"
 
     def test_body_tier_decision_table_mentions_micro(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "micro" in body.lower(), "Tier decision table must mention micro"
 
     def test_body_has_recommend_tools_subsection(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "recommend tools" in body.lower(), (
             "Body must have 'Recommend Tools' subsection"
         )
 
     def test_body_tools_mentions_per_tool_rationale(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "rationale" in body.lower(), (
             "Recommend Tools section must mention per-tool rationale"
         )
 
     def test_body_tools_mentions_no_delegate_for_pico(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "delegate" in body.lower() and "pico" in body.lower(), (
             "Recommend Tools must mention no delegate for pico"
         )
 
     def test_body_has_recommend_provider_subsection(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "recommend provider" in body.lower(), (
             "Body must have 'Recommend Provider' subsection"
         )
 
     def test_body_provider_mentions_anthropic_claude(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "anthropic" in body.lower() or "claude" in body.lower(), (
             "Recommend Provider must mention Anthropic/Claude"
         )
 
     def test_body_provider_mentions_openai(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "openai" in body.lower(), "Recommend Provider must mention OpenAI"
 
     def test_body_provider_mentions_gemini(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "gemini" in body.lower(), "Recommend Provider must mention Gemini"
 
     def test_body_provider_mentions_ollama(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "ollama" in body.lower(), "Recommend Provider must mention Ollama"
 
     def test_body_provider_mentions_azure(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "azure" in body.lower(), "Recommend Provider must mention Azure"
 
     def test_body_has_detect_tier_conflicts_subsection(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "tier conflict" in body.lower() or "detect tier" in body.lower(), (
             "Body must have 'Detect Tier Conflicts' subsection"
         )
 
     def test_body_tier_conflicts_has_hard_warning(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "warning" in body.lower() or "⚠" in body or "hard" in body.lower(), (
             "Tier conflict detection must mention hard warning"
         )
 
     def test_body_tier_conflicts_mentions_pico_cannot_delegate(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         # pico can't delegate is the canonical example in the spec
         body_lower = body.lower()
         assert "pico" in body_lower and "delegate" in body_lower, (
@@ -321,53 +301,46 @@ class TestCapabilityAdvisorAgent:
     # ------------------------------------------------------------------
 
     def test_body_has_capability_picker_template(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "capability picker" in body.lower(), (
             "Body must have Capability Picker template section"
         )
 
     def test_body_capability_picker_has_checkboxes(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "- [x]" in body or "- [ ]" in body, (
             "Capability Picker must use markdown checkboxes"
         )
 
     def test_body_capability_picker_has_tier_section(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "recommended tier" in body_lower or (
             "tier" in body_lower and "rationale" in body_lower
         ), "Capability Picker must include Recommended Tier with rationale"
 
     def test_body_capability_picker_has_llm_providers_section(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "llm provider" in body_lower or (
             "provider" in body_lower and ("checkbox" in body_lower or "- [" in body)
         ), "Capability Picker must include LLM Providers section"
 
     def test_body_capability_picker_has_tools_section(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         # The picker should show tools with checkboxes
         assert "- [" in body and ("tool" in body.lower()), (
             "Capability Picker must include Tools section with checkboxes"
         )
 
     def test_body_capability_picker_has_features_section(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "feature" in body.lower(), (
             "Capability Picker must include Features section"
         )
 
     def test_body_capability_picker_has_deployment_section(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "deployment" in body.lower(), (
             "Capability Picker must include Deployment section"
         )
@@ -377,39 +350,32 @@ class TestCapabilityAdvisorAgent:
     # ------------------------------------------------------------------
 
     def test_body_has_must_not_list(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert "must not" in body.lower() or "must_not" in body.lower(), (
             "Body must have a MUST NOT list"
         )
 
     def test_must_not_mentions_no_constraint_code(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "constraint" in body_lower and "code" in body_lower, (
             "MUST NOT list must mention no constraint code"
         )
 
     def test_must_not_mentions_no_runtime_code(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "runtime" in body_lower and "code" in body_lower, (
             "MUST NOT list must mention no runtime code"
         )
 
     def test_must_not_mentions_no_naming(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
-        assert "naming" in body_lower or "name" in body_lower, (
-            "MUST NOT list must mention no naming"
-        )
+        assert "naming" in body_lower, "MUST NOT list must mention no naming"
 
     def test_must_not_mentions_no_skip_tier_conflict(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "skip" in body_lower and "conflict" in body_lower, (
             "MUST NOT list must mention no skip tier conflict"
@@ -420,55 +386,48 @@ class TestCapabilityAdvisorAgent:
     # ------------------------------------------------------------------
 
     def test_body_has_final_response_contract(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         assert (
             "response contract" in body.lower() or "final response" in body.lower()
         ), "Body must have a Final Response Contract section"
 
     def test_final_response_contract_mentions_tier_rationale(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "tier" in body_lower and "rationale" in body_lower, (
             "Final Response Contract must mention tier + rationale"
         )
 
     def test_final_response_contract_mentions_provider_rationale(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "provider" in body_lower and "rationale" in body_lower, (
             "Final Response Contract must mention provider + rationale"
         )
 
     def test_final_response_contract_mentions_tools_per_tool_rationale(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "tool" in body_lower and "rationale" in body_lower, (
             "Final Response Contract must mention tools + per-tool rationale"
         )
 
     def test_final_response_contract_mentions_tier_conflict_warnings(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "conflict" in body_lower and (
             "warning" in body_lower or "warn" in body_lower
         ), "Final Response Contract must mention tier conflict warnings"
 
     def test_final_response_contract_mentions_capability_picker_markdown(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "capability picker" in body_lower, (
             "Final Response Contract must mention complete capability picker markdown"
         )
 
     def test_final_response_contract_mentions_discovery_status(self):
-        content = _read_file("agents/capability-advisor.md")
-        body = content.split("---", 2)[2]
+        body = _get_body()
         body_lower = body.lower()
         assert "discovery" in body_lower and "status" in body_lower, (
             "Final Response Contract must mention discovery status"
