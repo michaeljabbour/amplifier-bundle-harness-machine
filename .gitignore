@@ -1,6 +1,7 @@
 # Research docs (not part of the bundle)
 docs/research/
 docs/autoharness-amplifier-analysis.md
+docs/plans/*.md
 
 # OS
 .DS_Store
