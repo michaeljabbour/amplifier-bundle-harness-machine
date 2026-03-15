@@ -3,9 +3,9 @@
 Validates:
 - bundle.md exists with valid YAML frontmatter
 - behaviors/harness-machine.yaml exists with correct config
-- All 7 mode files exist with correct structure
-- All 9 agent files exist with correct structure
-- All 4 recipe files exist and parse as valid YAML
+- All 8 mode files exist with correct structure
+- All 11 agent files exist with correct structure
+- All 6 recipe files exist and parse as valid YAML
 - All 3 skills have SKILL.md files
 - Context files exist
 - Template files exist
