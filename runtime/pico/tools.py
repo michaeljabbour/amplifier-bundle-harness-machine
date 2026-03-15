@@ -6,7 +6,7 @@ Provides 7 tools, each independently enforcing the project_root boundary:
 Every path-accepting method resolves and validates against project_root
 (defense-in-depth — even if the constraint gate is bypassed, the executor
 still enforces the boundary and raises PermissionError for out-of-boundary
-access, or ConstraintViolation for gate denials).
+access).
 
 Dependencies: stdlib only (subprocess, pathlib, os, re).
 """
