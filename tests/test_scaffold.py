@@ -73,12 +73,14 @@ class TestBundleMd:
         # behaviors/harness-machine.yaml, not duplicated in bundle.md.
         # This test verifies behaviors/harness-machine.yaml has all 11.
         import pathlib
+
         behavior_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "behaviors",
             "harness-machine.yaml",
         )
         import yaml as _yaml
+
         behavior = _yaml.safe_load(pathlib.Path(behavior_path).read_text())
         agents = behavior["agents"]["include"]
         assert len(agents) == 11
@@ -88,12 +90,14 @@ class TestBundleMd:
         # behaviors/harness-machine.yaml, not duplicated in bundle.md.
         # This test verifies behaviors/harness-machine.yaml has all 11.
         import pathlib
+
         behavior_path = os.path.join(
             os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
             "behaviors",
             "harness-machine.yaml",
         )
         import yaml as _yaml
+
         behavior = _yaml.safe_load(pathlib.Path(behavior_path).read_text())
         agent_names = [entry.split(":")[-1] for entry in behavior["agents"]["include"]]
         for name in [
@@ -109,7 +113,9 @@ class TestBundleMd:
             "upgrade-checker",
             "upgrade-planner",
         ]:
-            assert name in agent_names, f"Agent {name!r} not found in behavior agents.include"
+            assert name in agent_names, (
+                f"Agent {name!r} not found in behavior agents.include"
+            )
 
     def test_includes_has_two_entries(self):
         fm = _parse_frontmatter(_read_file("bundle.md"))
@@ -135,10 +141,10 @@ class TestBundleMd:
         ]:
             assert mode in body, f"Mode {mode!r} not mentioned in bundle.md body"
 
-    def test_body_mentions_harness_machine_context(self):
+    def test_body_mentions_foundation_context(self):
         content = _read_file("bundle.md")
         body = content.split("---", 2)[2]
-        assert "@harness-machine:context/" in body
+        assert "@foundation:context/" in body
 
 
 # ---------------------------------------------------------------------------
