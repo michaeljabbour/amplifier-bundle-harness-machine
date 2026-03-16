@@ -89,9 +89,6 @@ Both tracks produce the same artifact: a constraint harness packaged as a nano-a
 
 Use `load_skill(search="harness")` to discover available skills.
 
-@harness-machine:context/pattern.md
-@harness-machine:context/harness-format.md
-
 ---
 
 @foundation:context/shared/common-system-base.md

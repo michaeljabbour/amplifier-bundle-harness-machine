@@ -176,7 +176,7 @@ bundle:
 
 hooks:
   - module: hooks-harness
-    source: git+https://github.com/michaeljabbour/amplifier-bundle-harness-machine@main#subdirectory=modules/hooks-harness
+    source: {{hooks_harness_source}}
     config:
       constraints_path: ./constraints.py
       harness_type: <action-filter|action-verifier|code-as-policy>
@@ -248,5 +248,18 @@ tier: {{tier}}
 project_root: {{project_root}}
 model: {{model}}
 ```
+
+### Hook Source Variable
+
+The `behavior.yaml` template uses a source variable for the hooks-harness module:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `hooks_harness_source` | Git source URL for the hooks-harness module, pinned to a tagged release | `git+https://github.com/microsoft/amplifier-bundle-harness-machine@v0.2.0#subdirectory=modules/hooks-harness` |
+
+The generator MUST:
+1. Use the current harness-machine repo URL (not a hardcoded personal org)
+2. Pin to a version tag (`@v0.2.0`), not `@main` — so generated harnesses survive repo reorganization
+3. Include `#subdirectory=modules/hooks-harness`
 
 Substitution is performed by `harness-machine:harness-generator` at generation time.
